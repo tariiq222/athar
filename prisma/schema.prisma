@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Platform {
+  linkedin
+  x
+}
+
+enum PostStatus {
+  draft
+  pending_review
+  approved
+  published
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  canceled
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users         User[]
+  brandProfiles BrandProfile[]
+  subscriptions Subscription[]
+  usageRecords  UsageRecord[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  tenantId     String
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
+
+model BrandProfile {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  tone               String
+  audience           String?
+  goals              String?
+  topics             String[]
+  prohibitions       String[]
+  competitors        String[]
+  keywords           String[]
+  brandKit           Json // colors, logoUrl, visualStyle, font
+  learnedPreferences String   @default("")
+  createdAt          DateTime @default(now())
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id])
+  accounts AccountProfile[]
+  posts    Post[]
+
+  @@index([tenantId])
+}
+
+model AccountProfile {
+  id             String   @id @default(cuid())
+  tenantId       String
+  brandProfileId String
+  platform       Platform
+  handle         String?
+
+  brandProfile BrandProfile @relation(fields: [brandProfileId], references: [id])
+
+  @@index([tenantId])
+  @@index([brandProfileId])
+}
+
+model Post {
+  id             String     @id @default(cuid())
+  tenantId       String
+  brandProfileId String
+  platform       Platform
+  status         PostStatus @default(draft)
+  text           String
+  hashtags       String[]
+  scheduledAt    DateTime?
+  createdAt      DateTime   @default(now())
+
+  brandProfile BrandProfile    @relation(fields: [brandProfileId], references: [id])
+  image        ImageAsset?
+  citations    SourceCitation[]
+
+  @@index([tenantId])
+  @@index([brandProfileId])
+}
+
+model ImageAsset {
+  id           String  @id @default(cuid())
+  postId       String  @unique
+  url          String
+  method       String // 'gpt-image' | 'overlay-fallback'
+  verifiedText String? // text confirmed by the vision-verify step (engine stage 4)
+  attempts     Int     @default(1)
+
+  post Post @relation(fields: [postId], references: [id])
+}
+
+model SourceCitation {
+  id        String @id @default(cuid())
+  postId    String
+  claim     String
+  sourceUrl String
+
+  post Post @relation(fields: [postId], references: [id])
+
+  @@index([postId])
+}
+
+model Subscription {
+  id                String             @id @default(cuid())
+  tenantId          String
+  status            SubscriptionStatus @default(trialing)
+  plan              String
+  trialEndsAt       DateTime?
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  usageRecords UsageRecord[]
+
+  @@index([tenantId])
+}
+
+// Phase-local tables added by their own migrations (LR-004: new migration per phase):
+//   SaudiOccasion (Phase 4), Reminder (Phase 5), Invoice (Phase 6).
+
+model UsageRecord {
+  id             String   @id @default(cuid())
+  tenantId       String
+  subscriptionId String?
+  kind           String // 'text' | 'image' | 'search'
+  units          Int
+  costUsd        Float    @default(0)
+  createdAt      DateTime @default(now())
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([tenantId])
+}
