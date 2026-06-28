@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **أثر (Athar)** — an Arabic-first SaaS that produces social-media content (LinkedIn / X) for Saudi SMBs. Per-company deep onboarding (`BrandProfile`) → a hybrid content engine (research → write → self-critique → image → assemble) → Saudi content calendar. Publishing is **manual-assisted** in this version (no auto-posting).
 
-**Status: pre-code.** Only the blueprint (`docs/blueprint/`), phase specs (`docs/specs/`), and the Sprint 0 plan (`docs/plans/2026-06-29-foundation-sprint0.md`) exist. The commands and structure below describe what Sprint 0 stands up — they won't exist until that plan is executed.
+**Status: Sprint 0 complete.** Backend skeleton (NestJS, Prisma, platform-limits, engine seams, health endpoint, CI) is up. The commands and structure below describe what Sprint 0 stands up — they are the runtime of this repo today.
 
 ## Locked decisions (do not relitigate)
 
@@ -26,7 +26,7 @@ These were settled after a grilling session (2026-06-28, see [docs/blueprint/14-
 |---|---|
 | Frontend | Next.js (React), RTL, IBM Plex Sans Arabic, mobile-first |
 | Backend | NestJS 10 (Node 20+ / TypeScript) |
-| DB | PostgreSQL 16 + Prisma 5 |
+| DB | PostgreSQL 16 + Prisma 7 (driver-adapter via `@prisma/adapter-pg`; generated client in `src/generated/prisma/`) |
 | Jobs/Queue | BullMQ + Redis 7 (ioredis) |
 | Object storage | MinIO / S3-compatible |
 | AI text | Claude API behind `ContentProvider` |
