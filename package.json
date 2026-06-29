@@ -52,6 +52,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^26.0.1",
     "@types/sharp": "^0.31.1",
+    "@types/twitter-text": "^3.1.10",
     "dotenv": "^17.4.2",
     "eslint": "^10.6.0",
     "eslint-plugin-jest": "^29.15.3",
