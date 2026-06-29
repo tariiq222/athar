@@ -182,3 +182,20 @@ model MonthPlan {
 
   @@index([tenantId])
 }
+
+model SaudiOccasion {
+  id            String   @id @default(cuid())
+  tenantId      String?  // null = public occasion shared by all tenants
+  slug          String   // stable occasion identifier — the upsert key
+  kind          String   // SaudiOccasionKind: national|foundation|ramadan|eid_fitr|eid_adha|commercial
+  nameAr        String
+  nameEn        String
+  startDate     DateTime
+  endDate       DateTime
+  hijriYear     Int
+  gregorianYear Int
+
+  @@unique([tenantId, slug, gregorianYear])
+  @@index([tenantId, startDate, endDate])
+  @@index([gregorianYear])
+}
