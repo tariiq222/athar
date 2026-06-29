@@ -8,6 +8,7 @@ const SCOPED_MODELS = new Set([
   'User',
   'Subscription',
   'UsageRecord',
+  'Invoice',
 ]);
 
 const WHERE_OPS = new Set([
