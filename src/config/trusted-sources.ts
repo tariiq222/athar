@@ -17,6 +17,8 @@
  *   3. No migration / no deploy of engine logic needed.
  */
 
+import type { BrandProfileInput } from '../engine/types';
+
 export const TRUSTED_DOMAINS: readonly string[] = [
   // Saudi Arabia — mainstream business / news
   'argaam.com',
@@ -66,11 +68,56 @@ export function isTrustedDomain(url: string): boolean {
  * Per-call domain check against a passed-in whitelist. Used by the search
  * fetcher so the caller (LiveSearchProvider) controls which list applies
  * (global TRUSTED_DOMAINS, per-tenant derivation, or an intersection).
+ *
+ * Allows exact match AND any subdomain (e.g. `www.reuters.com`,
+ * `sub.reuters.com` both pass for `reuters.com`). Look-alikes
+ * (`reuters.com.evil.com`) are rejected because they don't share a
+ * boundary at a `.`.
  */
 export function isDomainAllowed(url: string, whitelist: readonly string[]): boolean {
   const host = extractHostname(url);
   if (!host) return false;
-  return whitelist.some((d) => d.toLowerCase() === host);
+  return whitelist.some((d) => {
+    const norm = d.toLowerCase();
+    return host === norm || host.endsWith(`.${norm}`);
+  });
+}
+
+/**
+ * Plan-spec export name. Mirrors TRUSTED_DOMAINS so existing call sites
+ * keep working; new code should import GLOBAL_TRUSTED_DOMAINS.
+ */
+export const GLOBAL_TRUSTED_DOMAINS: readonly string[] = TRUSTED_DOMAINS;
+
+/**
+ * A topic entry that is itself a bare domain (e.g. `reuters.com`)
+ * becomes a tenant-specific trusted domain. Free-text topics
+ * (e.g. `fintech`) do not add domains.
+ */
+export function tenantDomainsForTopics(topics: string[]): string[] {
+  const domainLike = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
+  return topics
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => domainLike.test(t));
+}
+
+/**
+ * Build the effective whitelist for a brand: global trusted domains,
+ * plus any extras from `ENGINE_TRUSTED_DOMAINS_EXTRA` (comma-separated),
+ * plus domain-shaped topics from the brand. Deduped, no deploy needed
+ * to add a new global source — edit `TRUSTED_DOMAINS` (or set the env var).
+ */
+export function buildWhitelist(brand: BrandProfileInput): string[] {
+  const extra = (process.env.ENGINE_TRUSTED_DOMAINS_EXTRA ?? '')
+    .split(',')
+    .map((d) => d.trim().toLowerCase())
+    .filter(Boolean);
+  const all = [
+    ...(GLOBAL_TRUSTED_DOMAINS as readonly string[]),
+    ...extra,
+    ...tenantDomainsForTopics(brand.topics),
+  ];
+  return Array.from(new Set(all));
 }
 
 /**
