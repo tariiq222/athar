@@ -12,6 +12,7 @@ export const ALLOWED_TRANSITIONS: readonly PostStatusTransition[] = [
   { from: 'pending_review', to: 'approved' },
   { from: 'pending_review', to: 'draft' }, // reopen for more editing
   { from: 'approved', to: 'pending_review' }, // pull approval back before publishing
+  { from: 'approved', to: 'published' }, // Phase 5 — owned by mark-published only
 ];
 
 export class PostStateMachine {
@@ -20,14 +21,10 @@ export class PostStateMachine {
   }
 
   // Pure validation. Throws AppError on rejection; returns void on success.
+  // The `approved → published` transition is intentionally allowed here so the
+  // state machine is the single source of truth — but PostService.patch refuses
+  // any transition.to === 'published' (only Phase 5 marks published).
   assertTransition(currentStatus: PostStatus, transition: PostStatusTransition): void {
-    if (transition.to === 'published') {
-      throw new AppError(
-        422,
-        'PUBLISH_NOT_ALLOWED_HERE',
-        'النشر يتم في المرحلة الخامسة، وليس من هنا',
-      );
-    }
     if (transition.from !== currentStatus) {
       throw new AppError(
         409,

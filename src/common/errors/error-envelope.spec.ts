@@ -4,10 +4,16 @@ import {
   accountNotFound,
   contentLocked,
   emailAlreadyExists,
+  exceedsPlatformLimit,
+  invalidStatusTransition,
   invalidTransition,
+  notApproved,
   notFound,
   publishNotAllowedHere,
   rangeTooWide,
+  remindAtInPast,
+  remindAtRequired,
+  reminderAlreadySent,
   validationFailed,
 } from './error-envelope';
 
@@ -27,12 +33,18 @@ describe('error-envelope', () => {
         'CONFIRMATION_REQUIRED',
         'CONTENT_LOCKED',
         'EMAIL_ALREADY_EXISTS',
+        'EXCEEDS_PLATFORM_LIMIT',
         'INVALID_CREDENTIALS',
         'INVALID_REFRESH_TOKEN',
+        'INVALID_STATUS_TRANSITION',
         'INVALID_TRANSITION',
+        'NOT_APPROVED',
         'NOT_FOUND',
         'PUBLISH_NOT_ALLOWED_HERE',
         'RANGE_TOO_WIDE',
+        'REMIND_AT_IN_PAST',
+        'REMIND_AT_REQUIRED',
+        'REMINDER_ALREADY_SENT',
         'TOKEN_EXPIRED',
         'UNAUTHENTICATED',
         'VALIDATION_ERROR',
@@ -117,6 +129,47 @@ describe('error-envelope', () => {
         error: 'PUBLISH_NOT_ALLOWED_HERE',
         message: 'النشر يتم في المرحلة الخامسة، وليس من هنا.',
       });
+    });
+  });
+
+  describe('Phase 5 error codes', () => {
+    it('notApproved → 409 NOT_APPROVED', () => {
+      const ex = notApproved();
+      expect(ex.getStatus()).toBe(409);
+      expect(ex.getEnvelope()).toEqual(ERRORS.NOT_APPROVED);
+    });
+
+    it('exceedsPlatformLimit → 422 EXCEEDS_PLATFORM_LIMIT with detail', () => {
+      const ex = exceedsPlatformLimit(305, 280);
+      expect(ex.getStatus()).toBe(422);
+      expect((ex as AppError).code).toBe('EXCEEDS_PLATFORM_LIMIT');
+      expect(ex.getEnvelope().message).toContain('305');
+      expect(ex.getEnvelope().message).toContain('280');
+    });
+
+    it('invalidStatusTransition → 409 with current status surfaced', () => {
+      const ex = invalidStatusTransition('draft');
+      expect(ex.getStatus()).toBe(409);
+      expect((ex as AppError).code).toBe('INVALID_STATUS_TRANSITION');
+      expect(ex.getEnvelope().message).toContain('draft');
+    });
+
+    it('remindAtRequired → 422 REMIND_AT_REQUIRED', () => {
+      const ex = remindAtRequired();
+      expect(ex.getStatus()).toBe(422);
+      expect(ex.getEnvelope()).toEqual(ERRORS.REMIND_AT_REQUIRED);
+    });
+
+    it('remindAtInPast → 422 REMIND_AT_IN_PAST', () => {
+      const ex = remindAtInPast();
+      expect(ex.getStatus()).toBe(422);
+      expect(ex.getEnvelope()).toEqual(ERRORS.REMIND_AT_IN_PAST);
+    });
+
+    it('reminderAlreadySent → 409 REMINDER_ALREADY_SENT', () => {
+      const ex = reminderAlreadySent();
+      expect(ex.getStatus()).toBe(409);
+      expect(ex.getEnvelope()).toEqual(ERRORS.REMINDER_ALREADY_SENT);
     });
   });
 });

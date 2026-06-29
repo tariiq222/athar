@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { AppError } from '../common/errors/error-envelope';
+import { AppError, publishNotAllowedHere } from '../common/errors/error-envelope';
 import { PostStateMachine, PostStatusTransition } from './post-state-machine';
 import {
   PostCitation,
@@ -99,7 +99,11 @@ export class PostService {
 
       // 2. Validate the requested state transition (if any) BEFORE any write
       if (dto.transition) {
-        // Throws AppError(INVALID_TRANSITION) or AppError(PUBLISH_NOT_ALLOWED_HERE)
+        // Only Phase 5 publishes: PATCH must never move a post into 'published'.
+        if (dto.transition.to === 'published') {
+          throw publishNotAllowedHere();
+        }
+        // Throws AppError(INVALID_TRANSITION) on rejection
         this.stateMachine.assertTransition(existing.status as PostStatus, dto.transition);
       }
 

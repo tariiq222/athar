@@ -152,6 +152,23 @@ describe('PostService.patch', () => {
     ).rejects.toMatchObject({ code: 'INVALID_TRANSITION' });
   });
 
+  it('rejects any transition.to === "published" with PUBLISH_NOT_ALLOWED_HERE (only Phase 5 publishes)', async () => {
+    const existing = { id: 'p1', tenantId: 't1', status: 'approved', text: 'x', hashtags: [], image: null, citations: [] };
+    const tx = makeTxMock({ existing, final: existing });
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        PostService,
+        { provide: PrismaService, useValue: { $transaction: (cb: any) => cb(tx) } },
+      ],
+    }).compile();
+    const svc = moduleRef.get(PostService);
+
+    await expect(
+      svc.patch('t1', 'p1', { transition: { from: 'approved', to: 'published' } }),
+    ).rejects.toMatchObject({ code: 'PUBLISH_NOT_ALLOWED_HERE' });
+    expect(tx.post.update).not.toHaveBeenCalled();
+  });
+
   it('rejects content edit on an approved post with CONTENT_LOCKED (409)', async () => {
     const existing = { id: 'p1', tenantId: 't1', status: 'approved', text: 'x', hashtags: [], image: null, citations: [] };
     const tx = makeTxMock({ existing, final: existing });
