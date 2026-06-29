@@ -63,6 +63,17 @@ export function isTrustedDomain(url: string): boolean {
 }
 
 /**
+ * Per-call domain check against a passed-in whitelist. Used by the search
+ * fetcher so the caller (LiveSearchProvider) controls which list applies
+ * (global TRUSTED_DOMAINS, per-tenant derivation, or an intersection).
+ */
+export function isDomainAllowed(url: string, whitelist: readonly string[]): boolean {
+  const host = extractHostname(url);
+  if (!host) return false;
+  return whitelist.some((d) => d.toLowerCase() === host);
+}
+
+/**
  * Per-tenant derivation. The engine uses this to scope search queries to
  * the customer's topics. It is NOT a domain whitelist — only the global
  * list above controls which URLs are fetchable.
