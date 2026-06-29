@@ -13,6 +13,8 @@ import { BrandModule } from './brand/brand.module';
 import { PostModule } from './posts/post.module';
 import { OccasionModule } from './occasions/occasion.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { NotificationModule } from './notifications/notifications.module';
+import { PublishingModule } from './publishing/publishing.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { buildValidationPipe } from './common/dto-validation';
 
@@ -36,6 +38,8 @@ import { buildValidationPipe } from './common/dto-validation';
     PostModule,
     OccasionModule,
     CalendarModule,
+    NotificationModule,
+    PublishingModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: buildValidationPipe },

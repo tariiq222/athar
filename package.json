@@ -27,7 +27,8 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "forceExit": true
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",
