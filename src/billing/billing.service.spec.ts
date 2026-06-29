@@ -165,6 +165,29 @@ describe('BillingService', () => {
       const call = moyasar.createPaymentIntent.mock.calls[0][0];
       expect(call.amount).toBe(BUSINESS_PLAN.annualPriceMinor);
     });
+
+    it('returns transactionUrl: null when Moyasar response has no transaction_url (no 3DS challenge needed)', async () => {
+      const { svc } = makeSvc({
+        moyasar: {
+          createPaymentIntent: async () => ({
+            id: 'pay_no3ds',
+            status: 'paid',
+            amount: 59900,
+            currency: 'SAR',
+            source: { type: 'creditcard' },
+            metadata: { tenant_id: 't1', plan_code: 'business', cycle: 'monthly' },
+          }),
+          fetchPayment: jest.fn(),
+        },
+      });
+      const out = await svc.createSubscriptionIntent(
+        { tenantId: 't1', userId: 'u1' },
+        'business',
+        'monthly',
+      );
+      expect(out.status).toBe('paid');
+      expect(out.transactionUrl).toBeNull();
+    });
   });
 
   // ---------------------------------------------------------------------
@@ -366,6 +389,15 @@ describe('BillingService', () => {
         svc.verifyAndActivate('pay_1', { tenantId: 't1', userId: 'u1' }),
       ).rejects.toThrow(/billing cycle/i);
       expect(invoices).toHaveLength(0);
+    });
+
+    it('throws if no subscription row exists for the tenant (defensive — Auth should always create one)', async () => {
+      const { svc } = makeSvc({
+        findFirst: jest.fn(async () => null),
+      });
+      await expect(
+        svc.verifyAndActivate('pay_1', { tenantId: 't1', userId: 'u1' }),
+      ).rejects.toThrow(/no subscription/);
     });
 
     it('uses INV- prefix from INVOICE_NUMBER_PREFIX env', async () => {
@@ -600,6 +632,27 @@ describe('BillingService', () => {
       expect(out.status).toBe('trialing');
       expect(out.planCode).toBe('trial');
       expect(out.usage.drafts.cap).toBe(TRIAL_PLAN.monthlyDraftCap);
+    });
+
+    it('treats null _sum.units as 0 for fresh tenants with no usage yet', async () => {
+      const { svc } = makeSvc({
+        findFirst: jest.fn(async () => ({
+          id: 's1',
+          plan: 'business',
+          status: 'active',
+          trialEndsAt: null,
+          currentPeriodEnd: new Date(Date.now() + 86400_000),
+          cancelAtPeriodEnd: false,
+          tenantId: 't1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })),
+        usageAggregate: jest.fn(async () => ({ _sum: { units: null } })),
+      });
+      const out = await svc.getSubscription({ tenantId: 't1', userId: 'u1' });
+      expect(out.usage.drafts).toEqual({ used: 0, cap: BUSINESS_PLAN.monthlyDraftCap });
+      expect(out.usage.images).toEqual({ used: 0, cap: BUSINESS_PLAN.monthlyImageCap });
+      expect(out.usage.searches).toEqual({ used: 0, cap: BUSINESS_PLAN.monthlySearchCap });
     });
   });
 

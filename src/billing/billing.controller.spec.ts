@@ -37,6 +37,21 @@ describe('BillingController', () => {
     return { ctrl, billing, moyasar, config };
   }
 
+  // Helper for the missing-config case (config returns undefined).
+  function makeWithoutWebhookSecret() {
+    const billing = {
+      createSubscriptionIntent: jest.fn(),
+      handleWebhookEvent: jest.fn(),
+      getSubscription: jest.fn(),
+      cancel: jest.fn(),
+      getInvoice: jest.fn(),
+    } as any;
+    const _moyasar = { createPaymentIntent: jest.fn(), fetchPayment: jest.fn() } as any;
+    const config = { get: (_k: string) => undefined } as any;
+    const ctrl = new BillingController(billing, _moyasar, config);
+    return { ctrl, billing, config };
+  }
+
   const ctx: TenantContext = { tenantId: 't1', userId: 'u1' };
 
   it('subscribe delegates to billing.createSubscriptionIntent', async () => {
@@ -172,5 +187,25 @@ describe('BillingController', () => {
     await ctrl.invoice(ctx, 'inv_1');
     expect(billing.getInvoice).toHaveBeenCalledTimes(1);
     expect(billing.getInvoice).toHaveBeenCalledWith(ctx, 'inv_1');
+  });
+
+  describe('webhook with missing MOYASAR_WEBHOOK_SECRET config', () => {
+    it('rejects any incoming request (?? "" fallback is a constant-time fail vs undefined)', async () => {
+      const { ctrl, billing } = makeWithoutWebhookSecret();
+      const req = {
+        body: {
+          id: 'evt_x',
+          type: 'payment_paid',
+          created_at: '2026-06-29T00:00:00Z',
+          secret_token: 'whsec_xxx', // even a "valid-looking" token must fail
+          data: { id: 'pay_x', metadata: { tenant_id: 't1' } },
+        },
+      };
+      await expect(ctrl.webhook(req as any)).rejects.toMatchObject({
+        code: 'WEBHOOK_SIGNATURE_INVALID',
+        status: 401,
+      });
+      expect(billing.handleWebhookEvent).not.toHaveBeenCalled();
+    });
   });
 });

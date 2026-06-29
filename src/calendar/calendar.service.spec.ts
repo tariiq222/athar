@@ -39,6 +39,40 @@ describe('CalendarService.get', () => {
     expect(res.filter((e) => e.type === 'post')).toHaveLength(2); // unscheduled dropped
   });
 
+  it('tie-breakers: on the same date, occasion sorts before posts, posts sort by id', async () => {
+    // Forces ALL secondary + tertiary sort branches in the entries sorter:
+    //   - a.type === 'occasion' ? -1 : 1   (both branches, when both kinds on the same date)
+    //   - a.occasion?.id ?? a.post?.id     (the .post?.id fallback when a is a post)
+    //   - aId < bId ? -1 : aId > bId ? 1 : 0 (all three branches, two posts same date)
+    const occasionRow = { id: 'o1', tenantId: null, slug: 'nat', kind: 'national', nameAr: 'اليوم الوطني', nameEn: 'Nat', startDate: '2026-09-23', endDate: '2026-09-23', hijriYear: 1448, gregorianYear: 2026 };
+    const occasions = { list: jest.fn().mockResolvedValue([occasionRow]) };
+    const postItems = [
+      // Two posts on the same date, in REVERSE id order, to force the
+      // aId > bId branch in the tertiary key.
+      { id: 'p2', platform: 'x', status: 'approved', scheduledAt: '2026-09-23T10:00:00.000Z', text: 'second', hashtags: [], hasImage: false, citationCount: 0 },
+      { id: 'p1', platform: 'linkedin', status: 'pending_review', scheduledAt: '2026-09-23T09:00:00.000Z', text: 'first', hashtags: [], hasImage: true, citationCount: 0 },
+    ];
+    const posts = { list: jest.fn().mockResolvedValue({ items: postItems, page: 1, pageSize: 100, total: 2 }) };
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        CalendarService,
+        { provide: OccasionService, useValue: occasions },
+        { provide: PostService, useValue: posts },
+      ],
+    }).compile();
+    const svc = moduleRef.get(CalendarService);
+
+    const res = await svc.get('t1', { from: '2026-09-01', to: '2026-09-30' });
+
+    expect(res).toEqual([
+      // Occasion sorts first (secondary key: occasion before post)
+      { type: 'occasion', date: '2026-09-23', occasion: occasionRow },
+      // Posts tie-broken by id ascending (p1 before p2)
+      { type: 'post', date: '2026-09-23', post: { id: 'p1', platform: 'linkedin', status: 'pending_review', scheduledAt: '2026-09-23T09:00:00.000Z', excerpt: 'first', hasImage: true } },
+      { type: 'post', date: '2026-09-23', post: { id: 'p2', platform: 'x', status: 'approved', scheduledAt: '2026-09-23T10:00:00.000Z', excerpt: 'second', hasImage: false } },
+    ]);
+  });
+
   it('passes platform and kind filters through to the underlying services', async () => {
     const occasions = { list: jest.fn().mockResolvedValue([]) };
     const posts = { list: jest.fn().mockResolvedValue({ items: [], page: 1, pageSize: 100, total: 0 }) };
