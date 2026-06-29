@@ -166,3 +166,60 @@ describe('OnboardingService.analyze', () => {
     expect(res.source).toBe('mixed');
   });
 });
+
+describe('OnboardingService.commit', () => {
+  const draft = {
+    tone: 'friendly',
+    audience: 'smb',
+    goals: 'grow',
+    topics: ['tips'],
+    prohibitions: ['politics'],
+    competitors: ['c-a'],
+    keywords: ['growth'],
+    brandKit: { colors: ['#fff'], visualStyle: 'clean', font: 'IBM Plex Sans Arabic' },
+    accounts: [{ platform: 'x', handle: '@acme' }],
+  } as any;
+
+  it('AC-5: creates a BrandProfile with tenantId, learnedPreferences="" and brandKit json', async () => {
+    const prisma = makePrismaMock();
+    prisma.brandProfile.create.mockResolvedValue({ id: 'b1', tenantId: 't1', ...draft });
+    const svc = await buildService(prisma);
+    const out = await svc.commit(draft, 't1', draft.accounts);
+    expect(out.id).toBe('b1');
+    const arg = prisma.brandProfile.create.mock.calls[0][0].data;
+    expect(arg.tenantId).toBe('t1');
+    expect(arg.learnedPreferences).toBe('');
+    expect(arg.brandKit).toEqual(draft.brandKit);
+    expect(arg.topics).toEqual(['tips']);
+  });
+
+  it('AC-5/AC-7: creates one AccountProfile per account, each scoped by tenantId + brandProfileId', async () => {
+    const prisma = makePrismaMock();
+    prisma.brandProfile.create.mockResolvedValue({ id: 'b1', tenantId: 't1', ...draft });
+    const svc = await buildService(prisma);
+    await svc.commit(draft, 't1', draft.accounts);
+    expect(prisma.accountProfile.create).toHaveBeenCalledTimes(1);
+    const accArg = prisma.accountProfile.create.mock.calls[0][0].data;
+    expect(accArg.tenantId).toBe('t1');
+    expect(accArg.brandProfileId).toBe('b1');
+    expect(accArg.platform).toBe('x');
+    expect(accArg.handle).toBe('@acme');
+  });
+
+  it('rejects with 422 when tone is missing', async () => {
+    const prisma = makePrismaMock();
+    const svc = await buildService(prisma);
+    await expect(svc.commit({ ...draft, tone: '' }, 't1', [])).rejects.toMatchObject({
+      response: { error: { code: 'commit_incomplete', fields: ['tone'] } },
+    });
+    expect(prisma.brandProfile.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects with 422 when topics is empty', async () => {
+    const prisma = makePrismaMock();
+    const svc = await buildService(prisma);
+    await expect(svc.commit({ ...draft, topics: [] }, 't1', [])).rejects.toMatchObject({
+      response: { error: { code: 'commit_incomplete', fields: ['topics'] } },
+    });
+  });
+});

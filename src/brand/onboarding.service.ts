@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger, UnprocessableEntityException } from '@nestjs/common';
+import type { BrandProfile } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CONTENT_PROVIDER, SEARCH_PROVIDER } from '../engine/providers/provider.tokens';
 import type { ContentProvider, SummaryResult } from '../engine/providers/content-provider.interface';
@@ -6,7 +7,8 @@ import type { SearchProvider } from '../engine/providers/search-provider.interfa
 import { BRAND_ANALYZE_CONFIG } from './brand.config';
 import { errorEnvelope } from '../common/dto-validation';
 import { buildQuestions } from './build-questions';
-import type { OnboardingInputDto } from './dto/onboarding-input.dto';
+import type { AccountInputDto, OnboardingInputDto } from './dto/onboarding-input.dto';
+import type { BrandProfileDraftDto } from './dto/brand-profile-draft.dto';
 import type {
   BrandAnalysisResult,
   ConfirmationQuestion,
@@ -26,6 +28,50 @@ export class OnboardingService {
   // FR-2: pure question derivation, delegated to the pure function.
   buildQuestions(analysis: BrandAnalysisResult): ConfirmationQuestion[] {
     return buildQuestions(analysis);
+  }
+
+  // FR-2/FR-3: merge confirmed draft -> persisted BrandProfile + AccountProfile[].
+  async commit(
+    draft: BrandProfileDraftDto,
+    tenantId: string,
+    accounts: AccountInputDto[],
+  ): Promise<BrandProfile> {
+    const missing: string[] = [];
+    if (!draft.tone || draft.tone.trim().length === 0) missing.push('tone');
+    if (!draft.topics || draft.topics.length === 0) missing.push('topics');
+    if (missing.length > 0) {
+      throw new UnprocessableEntityException(
+        errorEnvelope('commit_incomplete', 'حقول إلزامية ناقصة', missing),
+      );
+    }
+
+    const profile = await this.prisma.brandProfile.create({
+      data: {
+        tenantId,
+        tone: draft.tone,
+        audience: draft.audience ?? '',
+        goals: draft.goals ?? '',
+        topics: draft.topics,
+        prohibitions: draft.prohibitions ?? [],
+        competitors: draft.competitors ?? [],
+        keywords: draft.keywords ?? [],
+        brandKit: draft.brandKit as object,
+        learnedPreferences: '',
+      },
+    });
+
+    for (const acc of accounts) {
+      await this.prisma.accountProfile.create({
+        data: {
+          tenantId,
+          brandProfileId: profile.id,
+          platform: acc.platform,
+          handle: acc.handle ?? null,
+        },
+      });
+    }
+
+    return profile;
   }
 
   // FR-1: fetch + summarize -> unconfirmed draft. Never throws on a failed fetch.
