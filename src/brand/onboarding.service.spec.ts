@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { UnprocessableEntityException } from '@nestjs/common';
 import { OnboardingService } from './onboarding.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AccountProfileService } from '../accounts/account-profile.service';
 import { CONTENT_PROVIDER, SEARCH_PROVIDER } from '../engine/providers/provider.tokens';
 import { FakeContentProvider } from '../engine/providers/fake-content-provider';
 import { FakeSearchProvider } from '../engine/providers/fake-search-provider';
@@ -10,26 +11,43 @@ function makePrismaMock() {
   return {
     usageRecord: { create: jest.fn().mockResolvedValue({}) },
     brandProfile: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
-    accountProfile: { create: jest.fn() },
   };
 }
 
-async function buildService(prisma: any) {
+function makeAccountProfileServiceMock() {
+  return {
+    createForTenant: jest.fn().mockImplementation((tenantId: string, dto: any) =>
+      Promise.resolve({
+        id: 'ap-' + Math.random().toString(36).slice(2, 8),
+        tenantId,
+        brandProfileId: dto.brandProfileId,
+        platform: dto.platform,
+        handle: dto.handle ?? null,
+      }),
+    ),
+    listForTenant: jest.fn(),
+    updateForTenant: jest.fn(),
+    deleteForTenant: jest.fn(),
+  };
+}
+
+async function buildHarness(prisma: any, accountProfiles: any = makeAccountProfileServiceMock()) {
   const moduleRef = await Test.createTestingModule({
     providers: [
       OnboardingService,
       { provide: PrismaService, useValue: prisma },
+      { provide: AccountProfileService, useValue: accountProfiles },
       { provide: CONTENT_PROVIDER, useClass: FakeContentProvider },
       { provide: SEARCH_PROVIDER, useClass: FakeSearchProvider },
     ],
   }).compile();
-  return moduleRef.get(OnboardingService);
+  return { svc: moduleRef.get(OnboardingService), accountProfiles };
 }
 
 describe('OnboardingService.analyze', () => {
   it('AC-8: rejects with 422 when consent is not accepted, before any fetch', async () => {
     const prisma = makePrismaMock();
-    const svc = await buildService(prisma);
+    const { svc } = await buildHarness(prisma);
     await expect(
       svc.analyze({ websiteUrl: 'https://x.com', accounts: [], consentAccepted: false } as any, 't1'),
     ).rejects.toBeInstanceOf(UnprocessableEntityException);
@@ -38,7 +56,7 @@ describe('OnboardingService.analyze', () => {
 
   it('AC-1: returns tone/products/audience/keywords for a valid website', async () => {
     const prisma = makePrismaMock();
-    const svc = await buildService(prisma);
+    const { svc } = await buildHarness(prisma);
     const res = await svc.analyze(
       { websiteUrl: 'https://example.com', accounts: [], consentAccepted: true } as any,
       't1',
@@ -53,7 +71,7 @@ describe('OnboardingService.analyze', () => {
 
   it('records a UsageRecord per provider call (fetch=search, summarize=text)', async () => {
     const prisma = makePrismaMock();
-    const svc = await buildService(prisma);
+    const { svc } = await buildHarness(prisma);
     await svc.analyze(
       { websiteUrl: 'https://example.com', accounts: [{ platform: 'x', handle: '@a' }], consentAccepted: true } as any,
       't1',
@@ -68,7 +86,7 @@ describe('OnboardingService.analyze', () => {
 
   it('AC-2/US-2.1: a failed website fetch does not throw and is marked failed', async () => {
     const prisma = makePrismaMock();
-    const svc = await buildService(prisma);
+    const { svc } = await buildHarness(prisma);
     const res = await svc.analyze(
       { websiteUrl: 'https://fail.example.com', accounts: [], consentAccepted: true } as any,
       't1',
@@ -80,7 +98,7 @@ describe('OnboardingService.analyze', () => {
 
   it('caps fetches at maxFetches and notes the skip', async () => {
     const prisma = makePrismaMock();
-    const svc = await buildService(prisma);
+    const { svc } = await buildHarness(prisma);
     const accounts = Array.from({ length: 10 }, (_, i) => ({ platform: 'x', handle: `@a${i}` }));
     const res = await svc.analyze(
       { websiteUrl: 'https://example.com', accounts, consentAccepted: true } as any,
@@ -96,7 +114,7 @@ describe('OnboardingService.analyze', () => {
 
   it('buildQuestions delegates to the pure function', async () => {
     const prisma = makePrismaMock();
-    const svc = await buildService(prisma);
+    const { svc } = await buildHarness(prisma);
     const res = await svc.analyze(
       { websiteUrl: 'https://example.com', accounts: [], consentAccepted: true } as any,
       't1',
@@ -104,19 +122,6 @@ describe('OnboardingService.analyze', () => {
     const qs = svc.buildQuestions(res);
     expect(qs.find((q) => q.field === 'topics')!.required).toBe(true);
   });
-
-  // Helper: build the service with a custom SearchProvider implementation.
-  async function buildServiceWithSearch(prisma: any, searchImpl: any) {
-    const moduleRef = await Test.createTestingModule({
-      providers: [
-        OnboardingService,
-        { provide: PrismaService, useValue: prisma },
-        { provide: CONTENT_PROVIDER, useClass: FakeContentProvider },
-        { provide: SEARCH_PROVIDER, useValue: searchImpl },
-      ],
-    }).compile();
-    return moduleRef.get(OnboardingService);
-  }
 
   it('source="accounts" when website fails but an account succeeds', async () => {
     const prisma = makePrismaMock();
@@ -129,7 +134,16 @@ describe('OnboardingService.analyze', () => {
         return { ok: true, text: `content of ${input.url}` };
       }),
     };
-    const svc = await buildServiceWithSearch(prisma, search);
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        OnboardingService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: AccountProfileService, useValue: makeAccountProfileServiceMock() },
+        { provide: CONTENT_PROVIDER, useClass: FakeContentProvider },
+        { provide: SEARCH_PROVIDER, useValue: search },
+      ],
+    }).compile();
+    const svc = moduleRef.get(OnboardingService);
     const res = await svc.analyze(
       {
         websiteUrl: 'https://fail.example.com',
@@ -152,7 +166,16 @@ describe('OnboardingService.analyze', () => {
         text: `content of ${input.url}`,
       })),
     };
-    const svc = await buildServiceWithSearch(prisma, search);
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        OnboardingService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: AccountProfileService, useValue: makeAccountProfileServiceMock() },
+        { provide: CONTENT_PROVIDER, useClass: FakeContentProvider },
+        { provide: SEARCH_PROVIDER, useValue: search },
+      ],
+    }).compile();
+    const svc = moduleRef.get(OnboardingService);
     const res = await svc.analyze(
       {
         websiteUrl: 'https://example.com',
@@ -183,7 +206,7 @@ describe('OnboardingService.commit', () => {
   it('AC-5: creates a BrandProfile with tenantId, learnedPreferences="" and brandKit json', async () => {
     const prisma = makePrismaMock();
     prisma.brandProfile.create.mockResolvedValue({ id: 'b1', tenantId: 't1', ...draft });
-    const svc = await buildService(prisma);
+    const { svc } = await buildHarness(prisma);
     const out = await svc.commit(draft, 't1', draft.accounts);
     expect(out.id).toBe('b1');
     const arg = prisma.brandProfile.create.mock.calls[0][0].data;
@@ -193,22 +216,25 @@ describe('OnboardingService.commit', () => {
     expect(arg.topics).toEqual(['tips']);
   });
 
-  it('AC-5/AC-7: creates one AccountProfile per account, each scoped by tenantId + brandProfileId', async () => {
+  it('AC-5/AC-7: creates one AccountProfile per account via AccountProfileService, each scoped by tenantId + brandProfileId', async () => {
     const prisma = makePrismaMock();
+    const accountProfiles = makeAccountProfileServiceMock();
     prisma.brandProfile.create.mockResolvedValue({ id: 'b1', tenantId: 't1', ...draft });
-    const svc = await buildService(prisma);
+    const { svc } = await buildHarness(prisma, accountProfiles);
     await svc.commit(draft, 't1', draft.accounts);
-    expect(prisma.accountProfile.create).toHaveBeenCalledTimes(1);
-    const accArg = prisma.accountProfile.create.mock.calls[0][0].data;
-    expect(accArg.tenantId).toBe('t1');
-    expect(accArg.brandProfileId).toBe('b1');
-    expect(accArg.platform).toBe('x');
-    expect(accArg.handle).toBe('@acme');
+    expect(accountProfiles.createForTenant).toHaveBeenCalledTimes(1);
+    const callArgs = accountProfiles.createForTenant.mock.calls[0];
+    expect(callArgs[0]).toBe('t1');
+    expect(callArgs[1]).toEqual({
+      brandProfileId: 'b1',
+      platform: 'x',
+      handle: '@acme',
+    });
   });
 
   it('rejects with 422 when tone is missing', async () => {
     const prisma = makePrismaMock();
-    const svc = await buildService(prisma);
+    const { svc } = await buildHarness(prisma);
     await expect(svc.commit({ ...draft, tone: '' }, 't1', [])).rejects.toMatchObject({
       response: { error: { code: 'commit_incomplete', fields: ['tone'] } },
     });
@@ -217,7 +243,7 @@ describe('OnboardingService.commit', () => {
 
   it('rejects with 422 when topics is empty', async () => {
     const prisma = makePrismaMock();
-    const svc = await buildService(prisma);
+    const { svc } = await buildHarness(prisma);
     await expect(svc.commit({ ...draft, topics: [] }, 't1', [])).rejects.toMatchObject({
       response: { error: { code: 'commit_incomplete', fields: ['topics'] } },
     });

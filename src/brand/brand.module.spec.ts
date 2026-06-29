@@ -4,6 +4,7 @@ import { BrandModule } from './brand.module';
 import { BrandController } from './brand.controller';
 import { OnboardingService } from './onboarding.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { TokenService } from '../auth/token.service';
 import { CONTENT_PROVIDER, SEARCH_PROVIDER } from '../engine/providers/provider.tokens';
 import { FakeContentProvider } from '../engine/providers/fake-content-provider';
 import { FakeSearchProvider } from '../engine/providers/fake-search-provider';
@@ -14,15 +15,19 @@ import { ImageStorageService } from '../engine/storage/image-storage.service';
 import { OverlayRenderer } from '../engine/providers/openai/overlay-renderer';
 import { MonthPlanService } from '../engine/month-plan/month-plan.service';
 
+// Env vars for JWT signing required by AuthModule's TokenService.
+process.env.JWT_ACCESS_SECRET ||= 'test-access-secret';
+process.env.JWT_REFRESH_SECRET ||= 'test-refresh-secret';
+process.env.JWT_ACCESS_TTL ||= '15m';
+process.env.JWT_REFRESH_TTL ||= '7d';
+process.env.TRIAL_DURATION_DAYS ||= '7';
+process.env.PURGE_RETENTION_DAYS ||= '30';
+process.env.DATABASE_URL ||= 'postgresql://test:test@localhost:5432/test?schema=public';
+
 describe('BrandModule', () => {
   it('compiles and resolves the controller + service', async () => {
-    // EngineModule pulls in the real Claude/OpenAI SDKs at construction time
-    // and MonthPlanService.onModuleInit opens Redis — stub them all (same
-    // pattern as engine.module.spec.ts). The seam tokens CONTENT_PROVIDER /
-    // SEARCH_PROVIDER are swapped with the fakes so the BrandBrain service
-    // resolves them in a test-friendly shape.
     const moduleRef = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ ignoreEnvFile: true }), BrandModule],
+      imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }), BrandModule],
     })
       .overrideProvider(PrismaService)
       .useValue({ usageRecord: { create: jest.fn() }, brandProfile: {}, accountProfile: {} })
@@ -37,6 +42,8 @@ describe('BrandModule', () => {
       .overrideProvider(OverlayRenderer)
       .useValue({} as any)
       .overrideProvider(MonthPlanService)
+      .useValue({} as any)
+      .overrideProvider(TokenService)
       .useValue({} as any)
       .overrideProvider(CONTENT_PROVIDER)
       .useClass(FakeContentProvider)

@@ -10,8 +10,9 @@ import {
 } from '@nestjs/common';
 import type { BrandProfile } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { JwtAuthGuard, TenantGuard } from '../auth/guards';
-import { CurrentTenant, TenantContext } from '../auth/current-tenant.decorator';
+import { JwtAuthGuard } from '../tenant/jwt-auth.guard';
+import { TenantGuard } from '../tenant/tenant.guard';
+import { CurrentTenant, TenantContext } from '../tenant/current-tenant.decorator';
 import { OnboardingService } from './onboarding.service';
 import { OnboardingInputDto } from './dto/onboarding-input.dto';
 import { BrandProfileDraftDto } from './dto/brand-profile-draft.dto';

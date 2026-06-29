@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, UnprocessableEntityException } from '@nestjs/common';
 import type { BrandProfile } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AccountProfileService } from '../accounts/account-profile.service';
 import { CONTENT_PROVIDER, SEARCH_PROVIDER } from '../engine/providers/provider.tokens';
 import type { ContentProvider, SummaryResult } from '../engine/providers/content-provider.interface';
 import type { SearchProvider } from '../engine/providers/search-provider.interface';
@@ -21,6 +22,7 @@ export class OnboardingService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly accountProfiles: AccountProfileService,
     @Inject(CONTENT_PROVIDER) private readonly content: ContentProvider,
     @Inject(SEARCH_PROVIDER) private readonly search: SearchProvider,
   ) {}
@@ -61,13 +63,10 @@ export class OnboardingService {
     });
 
     for (const acc of accounts) {
-      await this.prisma.accountProfile.create({
-        data: {
-          tenantId,
-          brandProfileId: profile.id,
-          platform: acc.platform,
-          handle: acc.handle ?? null,
-        },
+      await this.accountProfiles.createForTenant(tenantId, {
+        brandProfileId: profile.id,
+        platform: acc.platform,
+        handle: acc.handle,
       });
     }
 

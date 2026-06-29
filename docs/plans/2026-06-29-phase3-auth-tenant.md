@@ -22,6 +22,16 @@
 - `passwordHash` and `refreshTokenHash` are NEVER serialized in any response.
 - TDD: failing test first, run-fails, minimal impl, run-passes, commit per task.
 
+## Pre-Flight Findings
+
+Verified against `main` at SHA `466fe7a` on 2026-06-29 (post Phase 2 merge).
+
+| Assumption in this plan | Reality on `main` | Resolution |
+|---|---|---|
+| `ErrorEnvelope = { statusCode, error, message }` (new canonical shape) | Phase 2 shipped `{ error: { code, message, fields } }` at `src/common/dto-validation.ts`, used in 4 files (the validation pipe factory, `OnboardingService.commit`, `OnboardingService.analyze`, `BrandController`) | **Extend Phase 3 shape to include `fields?` (optional)**. Canonical: `{ statusCode, error, message, fields? }`. Phase 2's `errorEnvelope()` helper stays as a thin wrapper that maps to the new shape (Task 1 keeps the `errorEnvelope(code, message, fields)` signature, emits `{ statusCode: 422, error: code, message, fields }`). One shape across the whole project. |
+| `src/tenant/{jwt-auth.guard,tenant.guard,current-tenant.decorator}.ts` (new canonical location) | Phase 2 stubs at `src/auth/{guards.ts, current-tenant.decorator.ts}` exporting `JwtAuthGuard`, `TenantGuard`, `TenantContext`, `@CurrentTenant()`. `BrandController` imports from `../auth/guards` and `../auth/current-tenant.decorator`. | **Move Phase 2 files into `src/tenant/*` in Task 9** (this plan). Update BrandController's two import paths in the same task. Delete the empty `src/auth/` directory after the move. One canonical location for tenant/auth concerns. |
+| `AccountProfileModule`/`Service` will be the only writer of `AccountProfile` rows | Phase 2's `OnboardingService.commit` writes `AccountProfile` directly via `prisma.accountProfile.create` ([src/brand/onboarding.service.ts:63-72](src/brand/onboarding.service.ts#L63-L72)) | **Phase 2 calls `AccountProfileService.create()` after Task 11 builds it** (added as a sub-task in Task 11). Single source of truth for writes; consistent validation. |
+
 ## File Structure
 
 ```
@@ -1268,14 +1278,20 @@ git commit -m "feat: add AuthController and AuthModule"
 
 ### Task 9: TenantContext + @CurrentTenant() + JwtAuthGuard + TenantGuard + TenantModule
 
+> **Phase 2 stub migration:** Phase 2 created `src/auth/{guards.ts, current-tenant.decorator.ts}` with header-based stubs of `JwtAuthGuard`, `TenantGuard`, `@CurrentTenant()`, and `TenantContext`. This task MOVES those files to `src/tenant/*` and REPLACES the header-based stubs with real JWT-verifying implementations. Update `BrandController`'s imports in the same task. Delete the empty `src/auth/` directory after the move.
+
 **Files:**
+- Move (from `src/auth/`): `src/auth/guards.ts` → `src/tenant/guards.ts` (intermediate; replaced by `src/tenant/jwt-auth.guard.ts` + `src/tenant/tenant.guard.ts` below)
+- Move (from `src/auth/`): `src/auth/current-tenant.decorator.ts` → `src/tenant/current-tenant.decorator.ts` (re-export preserved)
+- Move (from `src/auth/`): `src/auth/current-tenant.decorator.spec.ts` → `src/tenant/current-tenant.decorator.spec.ts`
 - Create: `src/tenant/tenant-context.ts`
-- Create: `src/tenant/current-tenant.decorator.ts`
 - Create: `src/tenant/jwt-auth.guard.ts`
 - Create: `src/tenant/tenant.guard.ts`
 - Create: `src/tenant/tenant.module.ts`
 - Test: `src/tenant/jwt-auth.guard.spec.ts`
 - Test: `src/tenant/tenant.guard.spec.ts`
+- Modify: `src/brand/brand.controller.ts:13-14` (update import paths from `../auth/guards` and `../auth/current-tenant.decorator` to `../tenant/...`)
+- Delete: `src/auth/guards.ts`, `src/auth/current-tenant.decorator.ts`, `src/auth/current-tenant.decorator.spec.ts`, `src/auth/` (empty dir)
 
 **Interfaces:**
 - Produces (canonical contract consumed by every authenticated route in this and later phases):
@@ -1624,11 +1640,15 @@ git commit -m "feat: add Prisma tenant-scope client extension for scope-leakage 
 
 ### Task 11: AccountProfile DTOs + AccountProfileService (tenant-scoped CRUD)
 
+> **Phase 2 write-path migration:** Phase 2's `OnboardingService.commit` writes `AccountProfile` directly via `prisma.accountProfile.create` (Pre-Flight Finding #3). After this task lands the `AccountProfileService`, this task ALSO refactors `OnboardingService.commit` to call `AccountProfileService.createForTenant()` for each account — single source of truth for writes. Update tests accordingly.
+
 **Files:**
 - Create: `src/accounts/dto/create-account-profile.dto.ts`
 - Create: `src/accounts/dto/update-account-profile.dto.ts`
 - Create: `src/accounts/account-profile.service.ts`
 - Test: `src/accounts/account-profile.service.spec.ts`
+- Modify: `src/brand/onboarding.service.ts` — inject `AccountProfileService`, replace the direct `prisma.accountProfile.create` loop with `this.accountProfileService.createForTenant(tenantId, { brandProfileId: profile.id, platform, handle })`. Pass the new `BrandProfile.id` (the row just created) and the per-account platform/handle.
+- Modify: `src/brand/onboarding.service.spec.ts` — update the AC-5/AC-7 test to mock `AccountProfileService.createForTenant` instead of `prisma.accountProfile.create`. Add `AccountProfileService` to the test module's providers.
 
 **Interfaces:**
 - Produces:
@@ -1640,6 +1660,7 @@ git commit -m "feat: add Prisma tenant-scope client extension for scope-leakage 
     - `updateForTenant(tenantId: string, id: string, dto: UpdateAccountProfileDto): Promise<AccountProfile>` — `where: { id, tenantId }`; throws `accountNotFound()` (404) when no row in scope.
     - `deleteForTenant(tenantId: string, id: string): Promise<void>` — `where: { id, tenantId }`; throws `accountNotFound()` when out of scope.
 - Consumes: `PrismaService` (Sprint 0), `accountNotFound` (Task 1). (Direct `where: { id, tenantId }` is used here — explicit isolation; the Task 10 extension is the backstop.)
+- Updated consumer: `OnboardingService.commit` now depends on `AccountProfileService` (injected via constructor); `BrandModule` imports `AccountsModule` (Task 12) to resolve the dep.
 
 - [ ] **Step 1: Write the failing test**
 
