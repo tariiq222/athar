@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import { AuthModule } from '../auth/auth.module';
 import { EngineModule } from '../engine/engine.module';
 import { TenantModule } from '../tenant/tenant.module';
 import { BillingController } from './billing.controller';
@@ -15,6 +16,7 @@ import {
   imports: [
     ConfigModule,
     BullModule.registerQueue({ name: TRIAL_EXPIRY_QUEUE }),
+    AuthModule,
     EngineModule,
     TenantModule,
   ],

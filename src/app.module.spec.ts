@@ -7,6 +7,8 @@ import { UserController } from './user/user.controller';
 import { PublishingController } from './publishing/publishing.controller';
 import { REMINDER_QUEUE } from './publishing/reminder.constants';
 import { ReminderProcessor } from './publishing/reminder.processor';
+import { TRIAL_EXPIRY_QUEUE } from './billing/trial-expiry.processor';
+import { TrialExpiryProcessor } from './billing/trial-expiry.processor';
 
 // Env vars for SDK clients + JWT signing.
 process.env.JWT_ACCESS_SECRET ||= 'test-access-secret';
@@ -40,6 +42,10 @@ describe('AppModule', () => {
       .useValue({ add: () => Promise.resolve({}), remove: () => Promise.resolve() })
       .overrideProvider(ReminderProcessor)
       .useValue({ process: () => Promise.resolve() })
+      .overrideProvider(getQueueToken(TRIAL_EXPIRY_QUEUE))
+      .useValue({ add: () => Promise.resolve({}), remove: () => Promise.resolve() })
+      .overrideProvider(TrialExpiryProcessor)
+      .useValue({ runOnce: () => Promise.resolve(0) })
       .compile();
     try {
       expect(moduleRef.get(AuthController)).toBeDefined();
