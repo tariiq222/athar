@@ -80,21 +80,23 @@ export const ERRORS = {
 } as const satisfies Record<string, ErrorEnvelope>;
 
 export class AppError extends HttpException {
+  readonly code: string;
   private readonly envelopeMessage: string;
 
   constructor(
     private readonly statusCode: number,
-    private readonly errorCode: string,
+    errorCode: string,
     message: string,
   ) {
     super({ statusCode, error: errorCode, message }, statusCode);
     this.envelopeMessage = message;
+    this.code = errorCode;
   }
 
   getEnvelope(): ErrorEnvelope {
     return {
       statusCode: this.statusCode,
-      error: this.errorCode,
+      error: this.code,
       message: this.envelopeMessage,
     };
   }
