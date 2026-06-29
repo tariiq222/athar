@@ -382,6 +382,34 @@ describe('BillingService', () => {
       expect(out.status).toBe('active');
       expect(make.invoices[0].number).toMatch(/^ATH-t1-000001$/);
     });
+
+    it('invoice number uses FIRST 8 chars of tenantId (not last 6) to prevent inter-tenant collision', async () => {
+      const make = makeSvc();
+      const longTenant = 'cm1234567890abcdef';
+      // Override the moyasar mock so metadata.tenant_id matches the new long tenantId
+      make.moyasar.fetchPayment = jest.fn(async () => ({
+        id: 'pay_1',
+        status: 'paid',
+        amount: 59900,
+        currency: 'SAR',
+        source: { type: 'creditcard' },
+        metadata: { tenant_id: longTenant, plan_code: 'business', cycle: 'monthly' },
+      }));
+      await make.svc.verifyAndActivate('pay_1', { tenantId: longTenant, userId: 'u1' });
+      // First 8 of cuid = "cm123456"
+      expect(make.invoices[0].number).toBe('INV-cm123456-000001');
+    });
+
+    it('invoice number sequence uses regex on last 6 digits, robust to non-numeric tails', async () => {
+      const make = makeSvc();
+      // Seed the prisma mock to return a prior invoice with a non-conforming tail
+      (make.prisma as any).invoice.findFirst = jest.fn(async () => ({
+        number: 'INV-t1-CUSTOM-MEMO',
+      }));
+      // Non-numeric tail → seq falls back to 1 (not NaN)
+      await make.svc.verifyAndActivate('pay_1', { tenantId: 't1', userId: 'u1' });
+      expect(make.invoices[0].number).toBe('INV-t1-000001');
+    });
   });
 
   // ---------------------------------------------------------------------

@@ -198,8 +198,23 @@ export class BillingService {
   }
 
   // ---------------------------------------------------------------------------
-  // Private: sequential per-tenant invoice number. Format: PREFIX-<tenantTail>-000001.
-  // The `@@unique([tenantId, number])` constraint guarantees no collision.
+  // Private: sequential per-tenant invoice number.
+  //
+  // Format: PREFIX-<tenantHead8>-NNNNNN  (e.g. INV-cuid12ab-000001)
+  //   - PREFIX: from INVOICE_NUMBER_PREFIX env (default "INV")
+  //   - tenantHead8: first 8 chars of the tenant cuid. cuid has ~2^60 entropy;
+  //     8 hex chars gives ~2^32 ≈ 4B unique buckets — collision between two
+  //     distinct tenants in the same deployment is effectively impossible.
+  //     This is the human-readable disambiguator in the printed invoice.
+  //   - NNNNNN: zero-padded 6-digit per-tenant sequence. Lexicographic sort on
+  //     NNNNNN is equivalent to numeric sort because the field is fixed-width.
+  //
+  // The `@@unique([tenantId, number])` constraint guarantees intra-tenant
+  // uniqueness; the tenantHead8 prefix protects inter-tenant visual collision.
+  //
+  // DO NOT change this format without a migration: existing invoice numbers
+  // in production are parsed by the regex below — the format is part of the
+  // stored-data contract.
   // ---------------------------------------------------------------------------
   private async nextInvoiceNumber(
     tx: { invoice: { findFirst: (args: any) => Promise<{ number: string } | null> } },
@@ -211,8 +226,12 @@ export class BillingService {
       orderBy: { number: 'desc' },
       select: { number: true },
     });
-    const seq = last ? Number(last.number.split('-').pop()) + 1 : 1;
-    return `${prefix}-${tenantId.slice(-6)}-${String(seq).padStart(6, '0')}`;
+    // Parse the trailing 6-digit sequence defensively. A regex match is used
+    // instead of `split('-').pop()` so a future format change (e.g. a credit-
+    // memo suffix) cannot silently produce NaN.
+    const seqMatch = last?.number.match(/(\d{6})$/);
+    const seq = seqMatch ? Number(seqMatch[1]) + 1 : 1;
+    return `${prefix}-${tenantId.slice(0, 8)}-${String(seq).padStart(6, '0')}`;
   }
 
   // ---------------------------------------------------------------------------

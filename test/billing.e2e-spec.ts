@@ -99,6 +99,7 @@ async function bootApp(): Promise<{
 describeDb('Billing (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let tenantId: string | null = null;
   let fetchJson: ReturnType<typeof bootApp> extends Promise<infer R>
     ? R extends { fetchJson: infer F }
       ? F
@@ -114,8 +115,19 @@ describeDb('Billing (e2e)', () => {
   });
 
   afterAll(async () => {
-    // Clean up only the user we created (and cascade tenant via Prisma).
-    await prisma.user.deleteMany({ where: { email } });
+    // Cascade-delete all rows tied to the tenant created by this suite so a
+    // re-run on a shared DB does not accumulate Tenant/Subscription/UsageRecord
+    // rows. Order: leaf-most dependent first.
+    if (tenantId) {
+      await prisma.invoice.deleteMany({ where: { tenantId } });
+      await prisma.usageRecord.deleteMany({ where: { tenantId } });
+      await prisma.subscription.deleteMany({ where: { tenantId } });
+      await prisma.user.deleteMany({ where: { tenantId } });
+      await prisma.tenant.deleteMany({ where: { id: tenantId } });
+    } else {
+      // Fallback for the case where the register call below never ran (CI skip).
+      await prisma.user.deleteMany({ where: { email } });
+    }
     await app.close();
   });
 
@@ -127,6 +139,7 @@ describeDb('Billing (e2e)', () => {
     });
     expect(reg.status).toBe(201);
     const token = (reg.body as AuthTokens).accessToken;
+    tenantId = (reg.body as AuthTokens).tenantId;
 
     const res = await fetchJson<SubscriptionResponse>('/api/v1/billing/subscription', {
       method: 'GET',
