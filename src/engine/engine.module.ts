@@ -73,6 +73,15 @@ const candidateUrlProvider: CandidateUrlProvider = async (topic, whitelist) =>
     { provide: 'ImageProvider', useExisting: GptImageProvider },
     { provide: 'SearchProvider', useExisting: LiveSearchProvider },
   ],
-  exports: [PipelineService, MonthPlanService, LearningService],
+  exports: [
+    PipelineService,
+    MonthPlanService,
+    LearningService,
+    // Seam tokens exported so BrandModule (and future consumers) can resolve
+    // them through EngineModule's real-provider bindings.
+    'ContentProvider',
+    'ImageProvider',
+    'SearchProvider',
+  ],
 })
 export class EngineModule {}

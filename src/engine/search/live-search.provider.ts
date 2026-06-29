@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { SearchProvider } from '../providers/search-provider.interface';
+import type { SearchProvider, FetchInput, FetchResult } from '../providers/search-provider.interface';
 import type { FactSet, Fact, BrandProfileInput } from '../types';
 import { SourceFetcher } from './source-fetcher';
 import { FactExtractor } from './fact-extractor';
@@ -57,5 +57,9 @@ export class LiveSearchProvider implements SearchProvider {
     return facts.length > 0
       ? { hasFactualClaim: true, facts }
       : { hasFactualClaim: false, facts: [] };
+  }
+
+  async fetch(_input: FetchInput): Promise<FetchResult> {
+    throw new Error('fetch: not implemented (brand phase requires real impl in a future phase)');
   }
 }

@@ -1,4 +1,4 @@
-import type { GateDecision } from '../../../test/image-gate/run-gate';
+import type { GateDecision } from './image-gate';
 
 /**
  * IMAGE_GATE_DECISION — the committed default for image-stage behavior.

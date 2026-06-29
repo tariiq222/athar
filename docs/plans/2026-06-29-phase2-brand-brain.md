@@ -31,7 +31,7 @@ src/engine/providers/content-provider.interface.ts   # MODIFY: add summarize()
 src/engine/providers/search-provider.interface.ts    # MODIFY: add fetch()
 src/engine/providers/fake-content-provider.ts         # NEW: deterministic test/dev double
 src/engine/providers/fake-search-provider.ts          # NEW: deterministic test/dev double
-src/engine/providers/provider.tokens.ts               # NEW: DI tokens for the two seams
+src/engine/providers/provider.tokens.ts               # NEW: DI tokens (re-bind to existing EngineModule strings 'ContentProvider' / 'SearchProvider')
 
 src/auth/current-tenant.decorator.ts                  # NEW (Phase-3 stub): @CurrentTenant + TenantContext
 src/auth/guards.ts                                     # NEW (Phase-3 stub): JwtAuthGuard, TenantGuard
@@ -61,6 +61,8 @@ src/app.module.ts                                     # MODIFY: import BrandModu
 ```
 
 **Decomposition rationale:** seam edits + DI tokens + fakes (Task 1) are a self-contained provider-contract change. The Phase-3 auth stubs (Task 2) and validation/envelope (Task 3) are cross-cutting infra. Then config (Task 4), DTOs+types (Task 5), the pure `buildQuestions` (Task 6), the service `analyze`/`commit` (Tasks 7–8), and finally the controller wiring the four routes with guards and tenant scoping (Task 9). Module wiring (Task 10) makes it boot.
+
+> **Important architecture note (DI):** EngineModule (`src/engine/engine.module.ts`) already binds `'ContentProvider'` and `'SearchProvider'` to the real Claude/LiveSearch providers. BrandModule MUST NOT rebind these tokens (duplicate binding throws at runtime). BrandModule imports `EngineModule` and lets the real providers resolve through the shared token. Real providers gain stub `summarize`/`fetch` methods in Task 1 that throw `NotImplementedError`; the production runtime will surface them until a future phase adds real implementations. Tests swap fakes via `Test.createTestingModule({...}).overrideProvider(CONTENT_PROVIDER).useClass(FakeContentProvider)`.
 
 ---
 
@@ -125,9 +127,11 @@ describe('engine seam extensions', () => {
     expect(out.suggestedTopics).toEqual([]);
   });
 
-  it('exposes DI tokens', () => {
-    expect(CONTENT_PROVIDER).toBe('CONTENT_PROVIDER');
-    expect(SEARCH_PROVIDER).toBe('SEARCH_PROVIDER');
+  it('exposes DI tokens bound to EngineModule string keys', () => {
+    // These tokens must match the bindings in src/engine/engine.module.ts
+    // so BrandModule and EngineModule share the same provider resolution.
+    expect(CONTENT_PROVIDER).toBe('ContentProvider');
+    expect(SEARCH_PROVIDER).toBe('SearchProvider');
   });
 });
 ```
@@ -186,8 +190,10 @@ Then add this method to the existing `SearchProvider` interface body:
 `src/engine/providers/provider.tokens.ts`:
 ```ts
 // DI tokens for the engine seams. Services depend on these, not concretes.
-export const CONTENT_PROVIDER = 'CONTENT_PROVIDER';
-export const SEARCH_PROVIDER = 'SEARCH_PROVIDER';
+// Values MUST match the bindings in src/engine/engine.module.ts so BrandModule
+// and EngineModule resolve to the same provider instance at the root injector.
+export const CONTENT_PROVIDER = 'ContentProvider';
+export const SEARCH_PROVIDER = 'SearchProvider';
 ```
 
 - [ ] **Step 5: Create the fakes (full interface implementations)**
@@ -266,8 +272,28 @@ In `src/engine/types.spec.ts`, the `ContentProvider` stub gains:
 ```
 (If the foundation test does not stub a `SearchProvider`, leave it; otherwise add `fetch: async () => ({ ok: true, text: '' })`.)
 
-Run again: `npm run typecheck && npm test -- engine/types`
-Expected: PASS.
+- [ ] **Step 7b: Add stub `summarize`/`fetch` to the real engine providers**
+
+The interface extension in Step 3 breaks the existing real providers (`ClaudeContentProvider`, `LiveSearchProvider`) at typecheck. Add minimal stubs so they continue to satisfy the interface. Real implementations come in a future phase.
+
+In `src/engine/providers/claude/claude-content.provider.ts`, add to the class body:
+```ts
+  async summarize(_input: SummarizeInput): Promise<SummaryResult> {
+    throw new Error('summarize: not implemented (brand phase requires real impl in a future phase)');
+  }
+```
+And add `SummarizeInput, SummaryResult` to the import from `'../content-provider.interface'`.
+
+In `src/engine/search/live-search.provider.ts`, add to the class body:
+```ts
+  async fetch(_input: FetchInput): Promise<FetchResult> {
+    throw new Error('fetch: not implemented (brand phase requires real impl in a future phase)');
+  }
+```
+And add `FetchInput, FetchResult` to the import from `'../providers/search-provider.interface'`.
+
+Run again: `npm run typecheck && npm test -- engine/types && npm test -- claude-content && npm test -- live-search`
+Expected: PASS — existing engine tests still green; new stubs satisfy the interface.
 
 - [ ] **Step 8: Commit**
 
@@ -1749,10 +1775,10 @@ git commit -m "feat: add BrandController with 4 tenant-scoped routes and 404 iso
 - Test: `src/brand/brand.module.spec.ts`
 
 **Interfaces:**
-- Consumes: everything from Tasks 1–9.
-- Produces: `BrandModule` binding `CONTENT_PROVIDER -> FakeContentProvider` and `SEARCH_PROVIDER -> FakeSearchProvider` (real providers are swapped in the engine plan), the `OnboardingService`, and `BrandController`. `AppModule` imports `BrandModule` and registers `buildValidationPipe()` as a global pipe.
+- Consumes: everything from Tasks 1–9 + `EngineModule` (which provides the `CONTENT_PROVIDER` / `SEARCH_PROVIDER` tokens).
+- Produces: `BrandModule` that imports `EngineModule` (so the shared tokens resolve through the real providers, whose stub `summarize`/`fetch` from Task 1 step 7b throw `NotImplementedError` until a future phase wires real implementations), registers the `OnboardingService` and `BrandController`. Fakes are test-only — they are injected via `Test.createTestingModule(...).overrideProvider(...)`, never bound in the module itself (would conflict with `EngineModule`'s binding at the root injector). `AppModule` imports `BrandModule` and registers `buildValidationPipe()` as a global pipe.
 
-> Decision: wiring the FAKE providers here keeps the phase runnable end-to-end (foundation already ships the fakes-friendly seam). The engine plan rebinds these two tokens to the real Claude/search providers — same tokens, no controller/service change.
+> Decision (DI separation): the runtime binding of `CONTENT_PROVIDER`/`SEARCH_PROVIDER` lives in `EngineModule` only. `BrandModule` consumes it. Tests swap the real providers with `FakeContentProvider`/`FakeSearchProvider` via `overrideProvider` — same shape as `engine.module.spec.ts` already does for SDK stubs. A future phase that adds real `summarize`/`fetch` impls replaces the Task 1 step 7b stubs.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1763,6 +1789,9 @@ import { BrandModule } from './brand.module';
 import { BrandController } from './brand.controller';
 import { OnboardingService } from './onboarding.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CONTENT_PROVIDER, SEARCH_PROVIDER } from '../engine/providers/provider.tokens';
+import { FakeContentProvider } from '../engine/providers/fake-content-provider';
+import { FakeSearchProvider } from '../engine/providers/fake-search-provider';
 
 describe('BrandModule', () => {
   it('compiles and resolves the controller + service', async () => {
@@ -1771,6 +1800,10 @@ describe('BrandModule', () => {
     })
       .overrideProvider(PrismaService)
       .useValue({ usageRecord: { create: jest.fn() }, brandProfile: {}, accountProfile: {} })
+      .overrideProvider(CONTENT_PROVIDER)
+      .useClass(FakeContentProvider)
+      .overrideProvider(SEARCH_PROVIDER)
+      .useClass(FakeSearchProvider)
       .compile();
 
     expect(moduleRef.get(BrandController)).toBeInstanceOf(BrandController);
@@ -1789,21 +1822,17 @@ Expected: FAIL — cannot find `./brand.module`.
 `src/brand/brand.module.ts`:
 ```ts
 import { Module } from '@nestjs/common';
+import { EngineModule } from '../engine/engine.module';
 import { BrandController } from './brand.controller';
 import { OnboardingService } from './onboarding.service';
-import { CONTENT_PROVIDER, SEARCH_PROVIDER } from '../engine/providers/provider.tokens';
-import { FakeContentProvider } from '../engine/providers/fake-content-provider';
-import { FakeSearchProvider } from '../engine/providers/fake-search-provider';
 
-// Fakes are bound here for Phase 2. The engine plan rebinds these tokens
-// to the real Claude/search providers — same tokens, no change to this module's consumers.
+// BrandModule reuses EngineModule's CONTENT_PROVIDER / SEARCH_PROVIDER bindings
+// (the real providers carry stub summarize/fetch from Task 1 step 7b).
+// Fakes are test-only — swap them in via overrideProvider in spec files.
 @Module({
+  imports: [EngineModule],
   controllers: [BrandController],
-  providers: [
-    OnboardingService,
-    { provide: CONTENT_PROVIDER, useClass: FakeContentProvider },
-    { provide: SEARCH_PROVIDER, useClass: FakeSearchProvider },
-  ],
+  providers: [OnboardingService],
 })
 export class BrandModule {}
 ```

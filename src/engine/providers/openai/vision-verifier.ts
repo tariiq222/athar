@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
-import { isArabicTextBroken } from '../../../../test/image-gate/run-gate';
+import { isArabicTextBroken } from '../../image/image-gate';
 
 /**
  * Reads Arabic text back out of a generated image with a vision model

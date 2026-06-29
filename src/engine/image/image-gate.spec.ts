@@ -3,7 +3,7 @@ import {
   computeBreakageRate,
   decideMethod,
   GateSample,
-} from './run-gate';
+} from './image-gate';
 
 describe('image-gate breakage math', () => {
   it('flags broken when normalized verified text differs from intended', () => {
