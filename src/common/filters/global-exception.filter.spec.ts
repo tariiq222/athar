@@ -14,7 +14,7 @@ function mockHost() {
 describe('GlobalExceptionFilter', () => {
   const filter = new GlobalExceptionFilter();
 
-  it('maps AppException to its envelope and status', () => {
+  it('maps AppError to its envelope and status', () => {
     const { host, status, json } = mockHost();
     filter.catch(emailAlreadyExists(), host);
     expect(status).toHaveBeenCalledWith(409);

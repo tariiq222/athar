@@ -37,6 +37,36 @@ export const ERRORS = {
     error: 'VALIDATION_ERROR',
     message: 'تحقّق من صحّة المدخلات.',
   },
+  VALIDATION_FAILED: {
+    statusCode: 400,
+    error: 'VALIDATION_FAILED',
+    message: 'تحقّق من صحّة المدخلات.',
+  },
+  RANGE_TOO_WIDE: {
+    statusCode: 400,
+    error: 'RANGE_TOO_WIDE',
+    message: 'الفترة المطلوبة تتجاوز ٩٢ يوماً.',
+  },
+  INVALID_TRANSITION: {
+    statusCode: 409,
+    error: 'INVALID_TRANSITION',
+    message: 'انتقال حالة غير مسموح به.',
+  },
+  CONTENT_LOCKED: {
+    statusCode: 409,
+    error: 'CONTENT_LOCKED',
+    message: 'لا يمكن تعديل محتوى منشور مُعتمد. اسحبه للمراجعة أولاً.',
+  },
+  NOT_FOUND: {
+    statusCode: 404,
+    error: 'NOT_FOUND',
+    message: 'العنصر غير موجود.',
+  },
+  PUBLISH_NOT_ALLOWED_HERE: {
+    statusCode: 422,
+    error: 'PUBLISH_NOT_ALLOWED_HERE',
+    message: 'النشر يتم في المرحلة الخامسة، وليس من هنا.',
+  },
   ACCOUNT_NOT_FOUND: {
     statusCode: 404,
     error: 'ACCOUNT_NOT_FOUND',
@@ -49,7 +79,7 @@ export const ERRORS = {
   },
 } as const satisfies Record<string, ErrorEnvelope>;
 
-export class AppException extends HttpException {
+export class AppError extends HttpException {
   private readonly envelopeMessage: string;
 
   constructor(
@@ -70,8 +100,8 @@ export class AppException extends HttpException {
   }
 }
 
-function make(e: ErrorEnvelope): AppException {
-  return new AppException(e.statusCode, e.error, e.message);
+function make(e: ErrorEnvelope): AppError {
+  return new AppError(e.statusCode, e.error, e.message);
 }
 
 export const emailAlreadyExists = () => make(ERRORS.EMAIL_ALREADY_EXISTS);
@@ -81,3 +111,9 @@ export const invalidRefreshToken = () => make(ERRORS.INVALID_REFRESH_TOKEN);
 export const unauthenticated = () => make(ERRORS.UNAUTHENTICATED);
 export const accountNotFound = () => make(ERRORS.ACCOUNT_NOT_FOUND);
 export const confirmationRequired = () => make(ERRORS.CONFIRMATION_REQUIRED);
+export const validationFailed = () => make(ERRORS.VALIDATION_FAILED);
+export const rangeTooWide = () => make(ERRORS.RANGE_TOO_WIDE);
+export const invalidTransition = () => make(ERRORS.INVALID_TRANSITION);
+export const contentLocked = () => make(ERRORS.CONTENT_LOCKED);
+export const notFound = () => make(ERRORS.NOT_FOUND);
+export const publishNotAllowedHere = () => make(ERRORS.PUBLISH_NOT_ALLOWED_HERE);
