@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ContentProvider, DraftInput } from '../content-provider.interface';
+import type { ContentProvider, DraftInput, SummarizeInput, SummaryResult } from '../content-provider.interface';
 import type { Draft, Rubric, CritiqueResult } from '../../types';
 import { ClaudeClient } from './claude.client';
 
@@ -64,5 +64,9 @@ export class ClaudeContentProvider implements ContentProvider {
       passed: parsed.passed === true,
       issues: Array.isArray(parsed.issues) ? parsed.issues : [],
     };
+  }
+
+  async summarize(_input: SummarizeInput): Promise<SummaryResult> {
+    throw new Error('summarize: not implemented (brand phase requires real impl in a future phase)');
   }
 }

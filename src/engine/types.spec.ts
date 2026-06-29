@@ -13,6 +13,11 @@ describe('engine seams', () => {
     const stub: ContentProvider = {
       draft: async () => ({ text: '', citations: [], hashtags: [], imageBrief: '' } as Draft),
       critique: async () => ({ score: 1, passed: true, issues: [] }),
+      summarize: async () => ({
+        tone: '', products: [], audience: '', keywords: [],
+        suggestedTopics: [], suggestedCompetitors: [], colors: [],
+        visualStyle: '', confidence: 0,
+      }),
     };
     expect(typeof stub.draft).toBe('function');
     const fs: FactSet = { hasFactualClaim: false, facts: [] };
