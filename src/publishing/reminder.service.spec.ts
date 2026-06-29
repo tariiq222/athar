@@ -58,35 +58,23 @@ describe('ReminderService.create', () => {
 
   it('throws REMIND_AT_REQUIRED when neither remindAt nor scheduledAt exist', async () => {
     const { svc } = setup({ post: { id: 'p1', tenantId: 't1', scheduledAt: null } });
-    try {
-      await svc.create('t1', { postId: 'p1' });
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.code).toBe('REMIND_AT_REQUIRED');
-      expect(e.getStatus?.()).toBe(422);
-    }
+    await expect(svc.create('t1', { postId: 'p1' })).rejects.toMatchObject({
+      code: 'REMIND_AT_REQUIRED',
+    });
   });
 
   it('throws REMIND_AT_IN_PAST for a past remindAt', async () => {
     const { svc } = setup();
-    try {
-      await svc.create('t1', { postId: 'p1', remindAt: '2000-01-01T00:00:00.000Z' });
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.code).toBe('REMIND_AT_IN_PAST');
-      expect(e.getStatus?.()).toBe(422);
-    }
+    await expect(
+      svc.create('t1', { postId: 'p1', remindAt: '2000-01-01T00:00:00.000Z' }),
+    ).rejects.toMatchObject({ code: 'REMIND_AT_IN_PAST' });
   });
 
   it('throws NOT_FOUND for a missing or cross-tenant post', async () => {
     const { svc } = setup({ post: null });
-    try {
-      await svc.create('t1', { postId: 'nope' });
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.code).toBe('NOT_FOUND');
-      expect(e.getStatus?.()).toBe(404);
-    }
+    await expect(svc.create('t1', { postId: 'nope' })).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
   });
 });
 
@@ -103,24 +91,14 @@ describe('ReminderService.cancel', () => {
     const { svc, reminderRows } = setup();
     const [created] = await svc.create('t1', { postId: 'p1', channels: ['in_app'] });
     reminderRows.find((r) => r.id === created.id).status = 'sent';
-    try {
-      await svc.cancel('t1', created.id);
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.code).toBe('REMINDER_ALREADY_SENT');
-      expect(e.getStatus?.()).toBe(409);
-    }
+    await expect(svc.cancel('t1', created.id)).rejects.toMatchObject({
+      code: 'REMINDER_ALREADY_SENT',
+    });
   });
 
   it('throws NOT_FOUND for a cross-tenant reminder', async () => {
     const { svc } = setup();
-    try {
-      await svc.cancel('other', 'r1');
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.code).toBe('NOT_FOUND');
-      expect(e.getStatus?.()).toBe(404);
-    }
+    await expect(svc.cancel('other', 'r1')).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 });
 

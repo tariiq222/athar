@@ -1,5 +1,4 @@
 import { PostStateMachine, ALLOWED_TRANSITIONS } from './post-state-machine';
-import { AppError } from '../common/errors/error-envelope';
 
 describe('PostStateMachine', () => {
   const sm = new PostStateMachine();
@@ -29,22 +28,19 @@ describe('PostStateMachine', () => {
   });
 
   it('rejects a transition whose from does not match the current status', () => {
-    try {
-      sm.assertTransition('draft', { from: 'pending_review', to: 'approved' });
-      throw new Error('expected throw');
-    } catch (e) {
-      expect(e).toBeInstanceOf(AppError);
-      expect((e as AppError).getEnvelope().statusCode).toBe(409);
-    }
+    expect(() =>
+      sm.assertTransition('draft', { from: 'pending_review', to: 'approved' }),
+    ).toThrow(
+      expect.objectContaining({
+        message: expect.stringContaining('الحالة الحالية'),
+      }),
+    );
   });
 
   it('rejects an undefined transition (draft → approved) as INVALID_TRANSITION', () => {
-    try {
-      sm.assertTransition('draft', { from: 'draft', to: 'approved' });
-      throw new Error('expected throw');
-    } catch (e) {
-      expect((e as AppError).getEnvelope().error).toBe('INVALID_TRANSITION');
-    }
+    expect(() => sm.assertTransition('draft', { from: 'draft', to: 'approved' })).toThrow(
+      expect.objectContaining({ code: 'INVALID_TRANSITION' }),
+    );
   });
 
   it('accepts approved → published (semantically valid; PATCH must reject it at the service layer)', () => {

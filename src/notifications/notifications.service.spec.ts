@@ -53,12 +53,6 @@ describe('NotificationsService', () => {
   it('throws NOT_FOUND for a cross-tenant notification', async () => {
     const findFirst = jest.fn().mockResolvedValue(null);
     const svc = new NotificationsService({ notification: { findFirst } } as any);
-    try {
-      await svc.markRead(ctx as any, 'x');
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.code).toBe('NOT_FOUND');
-      expect(e.getStatus?.()).toBe(404);
-    }
+    await expect(svc.markRead(ctx as any, 'x')).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 });

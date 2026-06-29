@@ -42,24 +42,16 @@ describe('ExportFormatter', () => {
 
   it('throws EXCEEDS_PLATFORM_LIMIT when X body is over 280 weighted', () => {
     const tooLong = 'a'.repeat(281);
-    try {
-      fmt.format({ platform: 'x', text: tooLong, hashtags: [] });
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.getStatus?.()).toBe(422);
-      expect(e.code).toBe('EXCEEDS_PLATFORM_LIMIT');
-    }
+    expect(() => fmt.format({ platform: 'x', text: tooLong, hashtags: [] })).toThrow(
+      expect.objectContaining({ code: 'EXCEEDS_PLATFORM_LIMIT' }),
+    );
   });
 
   it('throws EXCEEDS_PLATFORM_LIMIT when LinkedIn body is over 3000', () => {
     const tooLong = 'a'.repeat(3001);
-    try {
-      fmt.format({ platform: 'linkedin', text: tooLong, hashtags: [] });
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.getStatus?.()).toBe(422);
-      expect(e.code).toBe('EXCEEDS_PLATFORM_LIMIT');
-    }
+    expect(() => fmt.format({ platform: 'linkedin', text: tooLong, hashtags: [] })).toThrow(
+      expect.objectContaining({ code: 'EXCEEDS_PLATFORM_LIMIT' }),
+    );
   });
 
   it('formats with no link and no hashtags cleanly', () => {

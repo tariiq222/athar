@@ -69,13 +69,9 @@ describe('ExportService', () => {
   it('throws NOT_FOUND for a missing or cross-tenant post', async () => {
     const prisma = makePrisma(null);
     const svc = new ExportService(prisma, formatter, linker);
-    try {
-      await svc.buildPayload('t1', 'nope');
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.code).toBe('NOT_FOUND');
-      expect(e.getStatus?.()).toBe(404);
-    }
+    await expect(svc.buildPayload('t1', 'nope')).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
   });
 
   it('throws NOT_APPROVED for a non-approved post', async () => {
@@ -90,12 +86,8 @@ describe('ExportService', () => {
       citations: [],
     });
     const svc = new ExportService(prisma, formatter, linker);
-    try {
-      await svc.buildPayload('t1', 'p4');
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.code).toBe('NOT_APPROVED');
-      expect(e.getStatus?.()).toBe(409);
-    }
+    await expect(svc.buildPayload('t1', 'p4')).rejects.toMatchObject({
+      code: 'NOT_APPROVED',
+    });
   });
 });

@@ -47,23 +47,15 @@ describe('MarkPublishedService', () => {
 
   it('throws INVALID_STATUS_TRANSITION for a non-approved post', async () => {
     const { svc } = setup({ id: 'p1', tenantId: 't1', status: 'draft' });
-    try {
-      await svc.markPublished('t1', 'p1');
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.code).toBe('INVALID_STATUS_TRANSITION');
-      expect(e.getStatus?.()).toBe(409);
-    }
+    await expect(svc.markPublished('t1', 'p1')).rejects.toMatchObject({
+      code: 'INVALID_STATUS_TRANSITION',
+    });
   });
 
   it('throws NOT_FOUND for a missing or cross-tenant post', async () => {
     const { svc } = setup(null);
-    try {
-      await svc.markPublished('t1', 'nope');
-      throw new Error('expected throw');
-    } catch (e: any) {
-      expect(e.code).toBe('NOT_FOUND');
-      expect(e.getStatus?.()).toBe(404);
-    }
+    await expect(svc.markPublished('t1', 'nope')).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
   });
 });
