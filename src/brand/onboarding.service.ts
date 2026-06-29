@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { Inject, Injectable, Logger, UnprocessableEntityException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CONTENT_PROVIDER, SEARCH_PROVIDER } from '../engine/providers/provider.tokens';
 import type { ContentProvider, SummaryResult } from '../engine/providers/content-provider.interface';
@@ -15,6 +15,8 @@ import type {
 
 @Injectable()
 export class OnboardingService {
+  private readonly logger = new Logger(OnboardingService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CONTENT_PROVIDER) private readonly content: ContentProvider,
@@ -98,13 +100,18 @@ export class OnboardingService {
         break;
       } catch (e) {
         lastError = e;
+        this.logger.warn(
+          `summarize attempt ${attempt + 1} failed: ${e instanceof Error ? e.message : String(e)}`,
+        );
       }
     }
     if (!summary) {
+      this.logger.error(
+        `summarize exhausted retries; falling back to emptySummary. lastError: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+      );
       notes.push('تعذّر التلخيص، عُرضت مسوّدة بحد أدنى');
       summary = this.emptySummary();
     }
-    void lastError;
 
     const source = this.deriveSource(websiteOk, anyAccountOk);
     return {

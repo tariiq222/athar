@@ -104,4 +104,65 @@ describe('OnboardingService.analyze', () => {
     const qs = svc.buildQuestions(res);
     expect(qs.find((q) => q.field === 'topics')!.required).toBe(true);
   });
+
+  // Helper: build the service with a custom SearchProvider implementation.
+  async function buildServiceWithSearch(prisma: any, searchImpl: any) {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        OnboardingService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: CONTENT_PROVIDER, useClass: FakeContentProvider },
+        { provide: SEARCH_PROVIDER, useValue: searchImpl },
+      ],
+    }).compile();
+    return moduleRef.get(OnboardingService);
+  }
+
+  it('source="accounts" when website fails but an account succeeds', async () => {
+    const prisma = makePrismaMock();
+    const search: any = {
+      research: jest.fn(),
+      fetch: jest.fn(async (input: { url: string }) => {
+        if (input.url === 'https://fail.example.com') {
+          return { ok: false, error: 'unreachable' };
+        }
+        return { ok: true, text: `content of ${input.url}` };
+      }),
+    };
+    const svc = await buildServiceWithSearch(prisma, search);
+    const res = await svc.analyze(
+      {
+        websiteUrl: 'https://fail.example.com',
+        accounts: [{ platform: 'x', handle: '@acct' }],
+        consentAccepted: true,
+      } as any,
+      't1',
+    );
+    expect(res.fetchStatus.website).toBe('failed');
+    expect(res.fetchStatus.accounts[0].status).toBe('ok');
+    expect(res.source).toBe('accounts');
+  });
+
+  it('source="mixed" when both website and an account succeed', async () => {
+    const prisma = makePrismaMock();
+    const search: any = {
+      research: jest.fn(),
+      fetch: jest.fn(async (input: { url: string }) => ({
+        ok: true,
+        text: `content of ${input.url}`,
+      })),
+    };
+    const svc = await buildServiceWithSearch(prisma, search);
+    const res = await svc.analyze(
+      {
+        websiteUrl: 'https://example.com',
+        accounts: [{ platform: 'x', handle: '@acct' }],
+        consentAccepted: true,
+      } as any,
+      't1',
+    );
+    expect(res.fetchStatus.website).toBe('ok');
+    expect(res.fetchStatus.accounts[0].status).toBe('ok');
+    expect(res.source).toBe('mixed');
+  });
 });
