@@ -39,7 +39,7 @@ describe('UsageRecorder', () => {
 
 describe('UsageRecorder.canConsume', () => {
   function makeRecorder(
-    usage: Array<{ kind: string; units: number; tenantId: string; createdAt?: Date }>,
+    usage: Array<{ kind: string; units: number; tenantId: string; createdAt: Date }>,
     subscription?: { id?: string; plan: string; status: string; trialEndsAt: Date | null } | null,
   ) {
     const prisma = {
@@ -51,7 +51,7 @@ describe('UsageRecorder.canConsume', () => {
               (u) =>
                 u.tenantId === where.tenantId &&
                 u.kind === (where.kind ?? u.kind) &&
-                (!where.createdAt || u.createdAt === undefined || u.createdAt >= where.createdAt.gte),
+                (!where.createdAt || u.createdAt >= where.createdAt.gte),
             )
             .reduce((acc, u) => acc + u.units, 0);
           return { _sum: { units: sum } };
@@ -67,7 +67,7 @@ describe('UsageRecorder.canConsume', () => {
 
   it('allows when used < cap', async () => {
     const rec = makeRecorder(
-      [{ kind: 'text', units: 5, tenantId: 't1' }],
+      [{ kind: 'text', units: 5, tenantId: 't1', createdAt: new Date(Date.now() - 86400_000) }],
       { plan: 'business', status: 'active', trialEndsAt: null },
     );
     const d = await rec.canConsume('t1', 'text', BUSINESS_PLAN);
@@ -78,7 +78,7 @@ describe('UsageRecorder.canConsume', () => {
 
   it('denies when used >= cap with Arabic reason', async () => {
     const rec = makeRecorder(
-      [{ kind: 'image', units: 30, tenantId: 't1' }],
+      [{ kind: 'image', units: 30, tenantId: 't1', createdAt: new Date(Date.now() - 86400_000) }],
       { plan: 'business', status: 'active', trialEndsAt: null },
     );
     const d = await rec.canConsume('t1', 'image', BUSINESS_PLAN);
@@ -94,7 +94,7 @@ describe('UsageRecorder.canConsume', () => {
     );
     const d = await rec.canConsume('t1', 'search', BUSINESS_PLAN);
     expect(d.allowed).toBe(false);
-    expect(d.reason).toContain('past_due');
+    expect(d.reason).toContain('متأخّر');
   });
 
   it('denies canceled regardless of count', async () => {

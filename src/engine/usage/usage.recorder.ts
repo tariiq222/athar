@@ -108,7 +108,7 @@ export class UsageRecorder {
         allowed: false,
         used: 0,
         cap: 0,
-        reason: `الاشتراك ${statusAr} (${status})؛ جدّد للاستمرار.`,
+        reason: `الاشتراك ${statusAr}؛ جدّد للاستمرار.`,
       };
     }
 
