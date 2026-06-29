@@ -94,13 +94,18 @@ model Post {
   hashtags       String[]
   scheduledAt    DateTime?
   createdAt      DateTime   @default(now())
+  quotaStatus    String     @default("ok") // 'ok' | 'skipped_quota'
+  originalText   String? // first generated text, kept for the learning diff
+  monthPlanId    String?
+  monthPlan      MonthPlan?  @relation(fields: [monthPlanId], references: [id])
 
-  brandProfile BrandProfile    @relation(fields: [brandProfileId], references: [id])
+  brandProfile BrandProfile     @relation(fields: [brandProfileId], references: [id])
   image        ImageAsset?
   citations    SourceCitation[]
 
   @@index([tenantId])
   @@index([brandProfileId])
+  @@index([monthPlanId])
 }
 
 model ImageAsset {
@@ -155,6 +160,21 @@ model UsageRecord {
 
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
   subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([tenantId])
+}
+
+model MonthPlan {
+  id           String   @id @default(cuid())
+  tenantId     String
+  total        Int
+  completed    Int      @default(0)
+  failed       Int      @default(0)
+  skippedQuota Int      @default(0)
+  status       String   @default("queued") // 'queued' | 'running' | 'done'
+  createdAt    DateTime @default(now())
+
+  posts Post[]
 
   @@index([tenantId])
 }
