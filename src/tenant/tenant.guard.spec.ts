@@ -16,13 +16,17 @@ describe('TenantGuard', () => {
   });
 
   it('rejects when context is missing (UNAUTHENTICATED)', () => {
+    let caught: unknown;
     try {
       guard.canActivate(ctx(undefined));
-      fail('expected TenantGuard to throw');
-    } catch (e: any) {
-      // AppException's body is the AppException itself; getResponse() returns the envelope.
-      expect(e.getResponse()).toMatchObject({ error: 'UNAUTHENTICATED' });
-      expect(e.getStatus()).toBe(401);
+    } catch (e) {
+      caught = e;
     }
+    // AppException's body is the AppException itself; getResponse() returns the envelope.
+    expect(caught).toBeDefined();
+    expect((caught as { getResponse: () => unknown }).getResponse()).toMatchObject({
+      error: 'UNAUTHENTICATED',
+    });
+    expect((caught as { getStatus: () => number }).getStatus()).toBe(401);
   });
 });
