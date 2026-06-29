@@ -72,3 +72,31 @@ export interface ImageAsset {
   method: 'gpt-image' | 'overlay-fallback';
   attempts: number;
 }
+
+// ─── Phase 1 additions ────────────────────────────────────────────────────
+
+export type EngineErrorKind = 'provider_error' | 'skipped_quota';
+
+export class EngineError extends Error {
+  constructor(message: string, public readonly kind: EngineErrorKind) {
+    super(message);
+    this.name = 'EngineError';
+  }
+}
+
+export type QuotaStatus = 'ok' | 'skipped_quota';
+
+export interface PipelineResult {
+  postId: string;
+  quotaStatus: QuotaStatus;
+  critiqueIssues: string[];
+  imageMethod: ImageAsset['method'] | null;
+}
+
+export interface MonthPlanProgress {
+  total: number;
+  completed: number;
+  failed: number;
+  skippedQuota: number;
+  status: 'queued' | 'running' | 'done';
+}

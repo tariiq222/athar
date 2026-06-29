@@ -6,3 +6,4 @@ coverage/
 .DS_Store
 src/generated/
 /src/generated/prisma
+.claude/settings.local.json

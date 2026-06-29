@@ -69,7 +69,7 @@ Read [docs/blueprint/16-معمارية-المحرّك.md](docs/blueprint/16-مع
 - **Code is English-only** — identifiers, comments, commit messages, log strings. Arabic only in user-facing content/strings and explicitly-requested docs. (Blueprint/specs are intentionally Arabic prose.)
 - **Every AI call records a `UsageRecord`** (text/image/search) for margin tracking; enforce per-tenant usage caps.
 - **Never edit an applied Prisma migration** — always add a new one. Phase-local tables (`SaudiOccasion`, `Reminder`, `Invoice`) come with their own phase migration.
-- **Tenant isolation** on every query; encrypt secrets; PDPL (explicit consent, data minimization, delete/export) + ZATCA invoices. Note: gpt-image means a *second* external data flow (OpenAI alongside Claude) — both must be covered in the privacy disclosure.
+- **Tenant isolation** on every query; encrypt secrets; PDPL (explicit consent, data minimization, delete/export) + simple subscription invoices. Note: gpt-image means a *second* external data flow (OpenAI alongside Claude) — both must be covered in the privacy disclosure.
 - **TDD:** failing test first → minimal impl → commit per task. CI runs lint + typecheck + test on every PR.
 
 ## Build flow

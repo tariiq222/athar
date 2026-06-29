@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the billing subsystem for أثر — Moyasar-backed subscription (single launch plan + 7-day trial), webhook-driven activation with server-side re-fetch, ZATCA-compliant invoicing, and a `UsageGuard.canConsume` seam consumed by the engine to enforce per-plan monthly caps.
+**Goal:** Build the billing subsystem for أثر — Moyasar-backed subscription (single launch plan + 7-day trial), webhook-driven activation with server-side re-fetch, simple subscription invoicing, and a `UsageGuard.canConsume` seam consumed by the engine to enforce per-plan monthly caps.
 
-**Architecture:** A NestJS `BillingModule` exposes `/billing` routes (all under the foundation's `api/v1` prefix). `BillingService` orchestrates the Moyasar flow: it creates a payment intent (publishable-key config returned to the frontend), and activates a subscription ONLY after a server-side `GET /v1/payments/:id` re-fetch with the secret key matches status/amount/currency/metadata.tenant_id. Activation is triggered by the webhook (the reliable channel) and is idempotent on `payment.id`. A new `Invoice` table (the only new table this phase) stores ZATCA-compliant invoices with sequential per-tenant numbers and a TLV→Base64 QR. `UsageGuard.canConsume(tenantId, kind)` reads `UsageRecord` sums against the current plan's caps and is consumed by the Phase-1 engine before every generation.
+**Architecture:** A NestJS `BillingModule` exposes `/billing` routes (all under the foundation's `api/v1` prefix). `BillingService` orchestrates the Moyasar flow: it creates a payment intent (publishable-key config returned to the frontend), and activates a subscription ONLY after a server-side `GET /v1/payments/:id` re-fetch with the secret key matches status/amount/currency/metadata.tenant_id. Activation is triggered by the webhook (the reliable channel) and is idempotent on `payment.id`. A new `Invoice` table (the only new table this phase) stores simple subscription invoices with sequential per-tenant numbers. `UsageGuard.canConsume(tenantId, kind)` reads `UsageRecord` sums against the current plan's caps and is consumed by the Phase-1 engine before every generation.
 
-**Tech Stack:** Node 20+ / TypeScript, NestJS 10, Prisma 5 + PostgreSQL 16, Jest. Moyasar REST API (`api.moyasar.com/v1`, HTTP Basic Auth with `sk_`). `uuid` for `given_id` (uuidv5). Node `crypto.timingSafeEqual` for webhook secret comparison. Node `Buffer` for ZATCA TLV/Base64.
+**Tech Stack:** Node 20+ / TypeScript, NestJS 10, Prisma 5 + PostgreSQL 16, Jest. Moyasar REST API (`api.moyasar.com/v1`, HTTP Basic Auth with `sk_`). `uuid` for `given_id` (uuidv5). Node `crypto.timingSafeEqual` for webhook secret comparison.
 
 ## Global Constraints
 
@@ -21,8 +21,7 @@
 - This phase is CONSUMED by Phase 1 (engine) via `UsageGuard.canConsume` before every text/image/search generation. `past_due`/`canceled` → `allowed=false` regardless of counter. All three `UsageKind` (`text`|`image`|`search`) are capped (search included — NFR-7).
 - The "current" subscription for a tenant is the most-recent `Subscription` row (history is one-to-many; `past_due ↔ active` cycles may accumulate rows). (spec §الاعتمادات)
 - DO NOT extend the `Subscription` model — `currentPeriodEnd`, `cancelAtPeriodEnd`, `trialEndsAt`, and the `SubscriptionStatus` enum already exist in the foundation schema. The ONLY new table is `Invoice` (new migration — LR-004: never edit existing migrations). (shared conventions, spec §الاعتمادات)
-- ZATCA Phase-1 (Generation) compliance minimum at launch; `Invoice` structure must accommodate Phase-2 later. QR = TLV (seller name, VAT number, timestamp, total incl. VAT, VAT amount) → Base64. Sequential per-tenant invoice numbers, no gaps. (spec §ZATCA)
-- Secrets in a secrets manager, not git: `MOYASAR_SECRET_KEY`, `MOYASAR_PUBLISHABLE_KEY`, `MOYASAR_WEBHOOK_SECRET`, `ATHAR_SELLER_VAT_NUMBER`. (shared conventions)
+- Secrets in a secrets manager, not git: `MOYASAR_SECRET_KEY`, `MOYASAR_PUBLISHABLE_KEY`, `MOYASAR_WEBHOOK_SECRET`. (shared conventions)
 - TDD: failing test first, minimal impl, commit per task. Jest config is in foundation `package.json`.
 
 ## File Structure
@@ -30,7 +29,7 @@
 ```
 prisma/schema.prisma                                   # MODIFY: add Invoice model + InvoiceStatus enum + back-relations
 prisma/migrations/<ts>_add_invoice/                    # NEW migration (Invoice table only)
-.env.example                                           # MODIFY: add Moyasar + ZATCA env vars
+.env.example                                           # MODIFY: add Moyasar env vars
 
 src/billing/billing.types.ts                           # MoyasarWebhookEvent, MoyasarPayment, ConsumeDecision, UsageKind, etc.
 src/billing/plan-definitions.ts                        # PlanDefinition, BUSINESS_PLAN, TRIAL_PLAN, resolvePlan(), getCap()
@@ -39,13 +38,10 @@ src/billing/plan-definitions.spec.ts
 src/billing/moyasar.client.ts                          # MoyasarClient.fetchPayment(id) — server-side re-fetch with sk_
 src/billing/moyasar.client.spec.ts
 
-src/billing/zatca.ts                                   # buildZatcaQr(fields) — TLV → Base64
-src/billing/zatca.spec.ts
-
 src/billing/usage.guard.ts                             # UsageGuard.canConsume(tenantId, kind)
 src/billing/usage.guard.spec.ts
 
-src/billing/billing.service.ts                         # createPaymentIntent, verifyAndActivate, issueZatcaInvoice, transitionStatus
+src/billing/billing.service.ts                         # createPaymentIntent, verifyAndActivate, issueInvoice, transitionStatus
 src/billing/billing.service.spec.ts
 
 src/billing/dto/subscribe.dto.ts                       # SubscribeDto (planCode, cycle)
@@ -59,7 +55,7 @@ src/billing/billing.module.ts                          # wires controller + prov
 src/app.module.ts                                      # MODIFY: import BillingModule
 ```
 
-**Decomposition rationale:** pure logic (plan config, ZATCA TLV, webhook-secret compare) is isolated into small, independently-testable units with no I/O. `MoyasarClient` isolates the only external HTTP call (the secret-key re-fetch) so it can be mocked everywhere else. `BillingService` holds the DB/orchestration logic and depends on the small units. `UsageGuard` is its own unit because the engine imports it directly. The controller is a thin HTTP layer over the service + guards.
+**Decomposition rationale:** pure logic (plan config, webhook-secret compare) is isolated into small, independently-testable units with no I/O. `MoyasarClient` isolates the only external HTTP call (the secret-key re-fetch) so it can be mocked everywhere else. `BillingService` holds the DB/orchestration logic and depends on the small units. `UsageGuard` is its own unit because the engine imports it directly. The controller is a thin HTTP layer over the service + guards.
 
 ---
 
@@ -71,7 +67,7 @@ src/app.module.ts                                      # MODIFY: import BillingM
 
 **Interfaces:**
 - Consumes: existing `Tenant`, `Subscription` models from foundation (Task 3 of foundation plan).
-- Produces: Prisma `Invoice` model — fields `id, tenantId, subscriptionId, moyasarPaymentId (unique), number, issuedAt, subtotalMinor, vatRate, vatAmountMinor, totalMinor, currency, sellerName, sellerVatNumber, buyerName, zatcaQr, status`; enum `InvoiceStatus { issued refunded }`; relations `Tenant.invoices Invoice[]`, `Subscription.invoices Invoice[]`.
+- Produces: Prisma `Invoice` model — fields `id, tenantId, subscriptionId, moyasarPaymentId (unique), number, issuedAt, totalMinor, currency, sellerName, buyerName, status`; enum `InvoiceStatus { issued refunded }`; relations `Tenant.invoices Invoice[]`, `Subscription.invoices Invoice[]`.
 
 - [ ] **Step 1: Add the `InvoiceStatus` enum**
 
@@ -109,17 +105,11 @@ model Invoice {
   moyasarPaymentId String        @unique          // links to the Moyasar payment; idempotency anchor
   number           String                          // sequential per tenant, no gaps (e.g. "ATHAR-000001")
   issuedAt         DateTime      @default(now())
-  // amounts — integer minor units (halalas)
-  subtotalMinor    Int                             // before VAT
-  vatRate          Float                           // 0.15
-  vatAmountMinor   Int
-  totalMinor       Int                             // incl. VAT
+  // amount — integer minor units (halalas)
+  totalMinor       Int
   currency         String        @default("SAR")
-  // ZATCA mandatory fields
   sellerName       String
-  sellerVatNumber  String
   buyerName        String
-  zatcaQr          String                          // Base64 TLV (ZATCA-compliant QR)
   status           InvoiceStatus @default(issued)
   tenant       Tenant       @relation(fields: [tenantId], references: [id])
   subscription Subscription @relation(fields: [subscriptionId], references: [id])
@@ -282,15 +272,10 @@ export interface InvoiceView {
   moyasarPaymentId: string;
   number: string;
   issuedAt: string;
-  subtotalMinor: number;
-  vatRate: number;
-  vatAmountMinor: number;
   totalMinor: number;
   currency: string;
   sellerName: string;
-  sellerVatNumber: string;
   buyerName: string;
-  zatcaQr: string;
   status: 'issued' | 'refunded';
 }
 ```
@@ -467,140 +452,7 @@ git commit -m "feat(billing): add plan definitions and trial plan"
 
 ---
 
-### Task 4: ZATCA QR builder (TLV → Base64)
-
-**Files:**
-- Create: `src/billing/zatca.ts`
-- Test: `src/billing/zatca.spec.ts`
-
-**Interfaces:**
-- Produces:
-  - `interface ZatcaQrFields { sellerName; sellerVatNumber; timestamp; totalWithVat; vatAmount }` (the five amounts as decimal strings, e.g. `'689.85'`)
-  - `buildZatcaQr(fields: ZatcaQrFields): string` — ZATCA Phase-1 TLV encoding (tags 1..5), Base64 output.
-  - `minorToDecimalString(minor: number): string` — `68985` → `'689.85'`.
-
-- [ ] **Step 1: Write the failing test**
-
-`src/billing/zatca.spec.ts`:
-```ts
-import { buildZatcaQr, minorToDecimalString, type ZatcaQrFields } from './zatca';
-
-describe('zatca', () => {
-  it('minorToDecimalString converts halalas to a 2dp decimal string', () => {
-    expect(minorToDecimalString(68985)).toBe('689.85');
-    expect(minorToDecimalString(59900)).toBe('599.00');
-    expect(minorToDecimalString(5)).toBe('0.05');
-    expect(minorToDecimalString(0)).toBe('0.00');
-  });
-
-  it('buildZatcaQr produces Base64 of a TLV stream with tags 1..5', () => {
-    const fields: ZatcaQrFields = {
-      sellerName: 'Athar',
-      sellerVatNumber: '300000000000003',
-      timestamp: '2026-06-29T12:00:00Z',
-      totalWithVat: '689.85',
-      vatAmount: '89.85',
-    };
-    const qr = buildZatcaQr(fields);
-    // Round-trip decode and assert the TLV structure.
-    const buf = Buffer.from(qr, 'base64');
-    // First TLV: tag=1, len=len('Athar')=5, value='Athar'
-    expect(buf[0]).toBe(1);
-    expect(buf[1]).toBe(5);
-    expect(buf.subarray(2, 7).toString('utf8')).toBe('Athar');
-    // Walk remaining TLVs and collect tags in order.
-    const tags: number[] = [];
-    let offset = 0;
-    while (offset < buf.length) {
-      const tag = buf[offset];
-      const len = buf[offset + 1];
-      tags.push(tag);
-      offset += 2 + len;
-    }
-    expect(tags).toEqual([1, 2, 3, 4, 5]);
-  });
-
-  it('handles multi-byte UTF-8 (Arabic seller name) with byte-length, not char-length', () => {
-    const fields: ZatcaQrFields = {
-      sellerName: 'أثر',
-      sellerVatNumber: '300000000000003',
-      timestamp: '2026-06-29T12:00:00Z',
-      totalWithVat: '689.85',
-      vatAmount: '89.85',
-    };
-    const qr = buildZatcaQr(fields);
-    const buf = Buffer.from(qr, 'base64');
-    const nameBytes = Buffer.from('أثر', 'utf8');
-    expect(buf[0]).toBe(1);
-    expect(buf[1]).toBe(nameBytes.length); // byte length, not 3 characters
-    expect(buf.subarray(2, 2 + nameBytes.length).toString('utf8')).toBe('أثر');
-  });
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `npm test -- zatca`
-Expected: FAIL — cannot find module `./zatca`.
-
-- [ ] **Step 3: Implement `src/billing/zatca.ts`**
-
-```ts
-// ZATCA Phase-1 (Generation) QR: a TLV (Tag-Length-Value) stream, Base64-encoded.
-// Five mandatory tags, in order:
-//   1 = seller name, 2 = VAT registration number, 3 = invoice timestamp (ISO 8601),
-//   4 = invoice total (with VAT), 5 = VAT total.
-// Length is the VALUE's BYTE length (UTF-8), not character count — Arabic names matter.
-
-export interface ZatcaQrFields {
-  sellerName: string;
-  sellerVatNumber: string;
-  timestamp: string; // ISO 8601
-  totalWithVat: string; // decimal string, e.g. '689.85'
-  vatAmount: string; // decimal string, e.g. '89.85'
-}
-
-function tlv(tag: number, value: string): Buffer {
-  const valueBuf = Buffer.from(value, 'utf8');
-  const header = Buffer.from([tag, valueBuf.length]);
-  return Buffer.concat([header, valueBuf]);
-}
-
-export function buildZatcaQr(fields: ZatcaQrFields): string {
-  const stream = Buffer.concat([
-    tlv(1, fields.sellerName),
-    tlv(2, fields.sellerVatNumber),
-    tlv(3, fields.timestamp),
-    tlv(4, fields.totalWithVat),
-    tlv(5, fields.vatAmount),
-  ]);
-  return stream.toString('base64');
-}
-
-export function minorToDecimalString(minor: number): string {
-  const sign = minor < 0 ? '-' : '';
-  const abs = Math.abs(minor);
-  const major = Math.floor(abs / 100);
-  const fraction = (abs % 100).toString().padStart(2, '0');
-  return `${sign}${major}.${fraction}`;
-}
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `npm test -- zatca`
-Expected: PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/billing/zatca.ts src/billing/zatca.spec.ts
-git commit -m "feat(billing): add ZATCA TLV QR builder"
-```
-
----
-
-### Task 5: Webhook secret guard (constant-time compare)
+### Task 4: Webhook secret guard (constant-time compare)
 
 **Files:**
 - Create: `src/billing/webhook-guard.ts`
@@ -675,7 +527,7 @@ git commit -m "feat(billing): add constant-time webhook secret guard"
 
 ---
 
-### Task 6: Moyasar client (server-side payment re-fetch)
+### Task 5: Moyasar client (server-side payment re-fetch)
 
 **Files:**
 - Create: `src/billing/moyasar.client.ts`
@@ -787,7 +639,7 @@ git commit -m "feat(billing): add Moyasar server-side payment re-fetch client"
 
 ---
 
-### Task 7: UsageGuard.canConsume (cap + status enforcement)
+### Task 6: UsageGuard.canConsume (cap + status enforcement)
 
 **Files:**
 - Create: `src/billing/usage.guard.ts`
@@ -969,7 +821,7 @@ git commit -m "feat(billing): add UsageGuard.canConsume with cap and status enfo
 
 ---
 
-### Task 8: SubscribeDto
+### Task 7: SubscribeDto
 
 **Files:**
 - Create: `src/billing/dto/subscribe.dto.ts`
@@ -1050,20 +902,20 @@ git commit -m "feat(billing): add SubscribeDto with validation"
 
 ---
 
-### Task 9: BillingService — createPaymentIntent
+### Task 8: BillingService — createPaymentIntent
 
 **Files:**
 - Create: `src/billing/billing.service.ts`
 - Test: `src/billing/billing.service.spec.ts`
 
 **Interfaces:**
-- Consumes: `PrismaService`; `MoyasarClient`; `resolvePlan`, `priceForCycle` from `plan-definitions`; env `MOYASAR_PUBLISHABLE_KEY`, `MOYASAR_SECRET_KEY`, `ATHAR_SELLER_VAT_NUMBER`; `ConfigService`.
+- Consumes: `PrismaService`; `MoyasarClient`; `resolvePlan`, `priceForCycle` from `plan-definitions`; env `MOYASAR_PUBLISHABLE_KEY`, `MOYASAR_SECRET_KEY`; `ConfigService`.
 - Produces: injectable `BillingService`. This task adds:
   - `createPaymentIntent(tenantId: string, planCode: string, cycle: 'monthly' | 'annual'): Promise<PaymentIntentResponse>`
   - `interface PaymentIntentResponse { publishableKey; amount; currency: 'SAR'; callbackUrl; givenId; metadata: { tenant_id; plan_code; cycle } }`
   - `buildGivenId(tenantId: string, attempt: number): string` (uuidv5, namespace constant).
 
-The service is built incrementally across Tasks 9–12; each task adds methods and tests without rewriting prior ones.
+The service is built incrementally across Tasks 8–11; each task adds methods and tests without rewriting prior ones.
 
 - [ ] **Step 1: Install uuid**
 
@@ -1084,7 +936,6 @@ const ENV: Record<string, string> = {
   MOYASAR_PUBLISHABLE_KEY: 'pk_test_pub',
   MOYASAR_SECRET_KEY: 'sk_test_sec',
   MOYASAR_WEBHOOK_SECRET: 'whsec',
-  ATHAR_SELLER_VAT_NUMBER: '300000000000003',
   BILLING_CALLBACK_URL: 'https://app.athar.sa/billing/callback',
   ATHAR_SELLER_NAME: 'Athar',
 };
@@ -1224,23 +1075,21 @@ git commit -m "feat(billing): add BillingService.createPaymentIntent with determ
 
 ---
 
-### Task 10: BillingService — issueZatcaInvoice (sequential per-tenant number + QR)
+### Task 9: BillingService — issueInvoice (sequential per-tenant number)
 
 **Files:**
-- Modify: `src/billing/billing.service.ts` (add `issueZatcaInvoice`)
+- Modify: `src/billing/billing.service.ts` (add `issueInvoice`)
 - Test: `src/billing/billing.service.spec.ts` (add a describe block)
 
 **Interfaces:**
-- Consumes: `buildZatcaQr`, `minorToDecimalString` from `zatca`; `PrismaService.invoice`, `PrismaService.tenant`; env `ATHAR_SELLER_VAT_NUMBER`, `ATHAR_SELLER_NAME`.
-- Produces: `issueZatcaInvoice(args: IssueInvoiceArgs): Promise<Invoice>` and `interface IssueInvoiceArgs { tenantId; subscriptionId; moyasarPaymentId; totalMinor }`. VAT split: total is VAT-inclusive (15%); `subtotalMinor = round(total / 1.15)`, `vatAmountMinor = total - subtotal`. Invoice number is `ATHAR-` + zero-padded sequential count per tenant.
+- Consumes: `PrismaService.invoice`, `PrismaService.tenant`; env `ATHAR_SELLER_NAME`.
+- Produces: `issueInvoice(args: IssueInvoiceArgs): Promise<Invoice>` and `interface IssueInvoiceArgs { tenantId; subscriptionId; moyasarPaymentId; totalMinor }`. `totalMinor` is the amount charged (halalas). Invoice number is `ATHAR-` + zero-padded sequential count per tenant.
 
 - [ ] **Step 1: Write the failing test (append to billing.service.spec.ts)**
 
 ```ts
-import { buildZatcaQr } from './zatca';
-
-describe('BillingService.issueZatcaInvoice', () => {
-  it('creates a ZATCA invoice with VAT split, sequential number, and QR', async () => {
+describe('BillingService.issueInvoice', () => {
+  it('creates an invoice with the charged total and a sequential number', async () => {
     const created: any[] = [];
     const prisma = {
       invoice: {
@@ -1256,33 +1105,20 @@ describe('BillingService.issueZatcaInvoice', () => {
     const moduleRef = await buildService(prisma, {});
     const svc = moduleRef.get(BillingService);
 
-    const invoice = await svc.issueZatcaInvoice({
+    const invoice = await svc.issueInvoice({
       tenantId: 't1',
       subscriptionId: 's1',
       moyasarPaymentId: 'payment_x',
       totalMinor: 59900,
     });
 
-    // VAT-inclusive split: subtotal = round(59900 / 1.15) = 52087, vat = 7813
-    expect(created[0].subtotalMinor).toBe(52087);
-    expect(created[0].vatAmountMinor).toBe(7813);
     expect(created[0].totalMinor).toBe(59900);
-    expect(created[0].vatRate).toBe(0.15);
     // sequential per tenant: count was 2 → number is the 3rd
     expect(created[0].number).toBe('ATHAR-000003');
     expect(created[0].sellerName).toBe('Athar');
-    expect(created[0].sellerVatNumber).toBe('300000000000003');
     expect(created[0].buyerName).toBe('Acme Co');
     expect(created[0].currency).toBe('SAR');
-    // QR is the Base64 TLV for the same fields
-    const expectedQr = buildZatcaQr({
-      sellerName: 'Athar',
-      sellerVatNumber: '300000000000003',
-      timestamp: created[0].issuedAt.toISOString(),
-      totalWithVat: '599.00',
-      vatAmount: '78.13',
-    });
-    expect(created[0].zatcaQr).toBe(expectedQr);
+    expect(created[0].status).toBe('issued');
     expect(invoice.id).toBe('inv_3');
   });
 });
@@ -1291,13 +1127,12 @@ describe('BillingService.issueZatcaInvoice', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npm test -- billing.service`
-Expected: FAIL — `svc.issueZatcaInvoice is not a function`.
+Expected: FAIL — `svc.issueInvoice is not a function`.
 
-- [ ] **Step 3: Add `issueZatcaInvoice` to `BillingService`**
+- [ ] **Step 3: Add `issueInvoice` to `BillingService`**
 
-Add these imports at the top of `src/billing/billing.service.ts`:
+Add this import at the top of `src/billing/billing.service.ts`:
 ```ts
-import { buildZatcaQr, minorToDecimalString } from './zatca';
 import type { Invoice } from '@prisma/client';
 ```
 
@@ -1307,14 +1142,12 @@ export interface IssueInvoiceArgs {
   tenantId: string;
   subscriptionId: string;
   moyasarPaymentId: string;
-  totalMinor: number; // VAT-inclusive total in halalas
+  totalMinor: number; // amount charged, in halalas
 }
 ```
 
 Inside the `BillingService` class:
 ```ts
-  private readonly VAT_RATE = 0.15;
-
   // Sequential, gap-free per-tenant number: ATHAR-000001, ATHAR-000002, ...
   private async nextInvoiceNumber(tenantId: string): Promise<string> {
     const existing = await this.prisma.invoice.count({ where: { tenantId } });
@@ -1322,24 +1155,11 @@ Inside the `BillingService` class:
     return `ATHAR-${String(next).padStart(6, '0')}`;
   }
 
-  async issueZatcaInvoice(args: IssueInvoiceArgs): Promise<Invoice> {
-    // Total is VAT-inclusive. Derive subtotal and VAT from it.
-    const subtotalMinor = Math.round(args.totalMinor / (1 + this.VAT_RATE));
-    const vatAmountMinor = args.totalMinor - subtotalMinor;
-
+  async issueInvoice(args: IssueInvoiceArgs): Promise<Invoice> {
     const tenant = await this.prisma.tenant.findUnique({ where: { id: args.tenantId } });
     const sellerName = this.config.get<string>('ATHAR_SELLER_NAME')!;
-    const sellerVatNumber = this.config.get<string>('ATHAR_SELLER_VAT_NUMBER')!;
     const number = await this.nextInvoiceNumber(args.tenantId);
     const issuedAt = new Date();
-
-    const zatcaQr = buildZatcaQr({
-      sellerName,
-      sellerVatNumber,
-      timestamp: issuedAt.toISOString(),
-      totalWithVat: minorToDecimalString(args.totalMinor),
-      vatAmount: minorToDecimalString(vatAmountMinor),
-    });
 
     return this.prisma.invoice.create({
       data: {
@@ -1348,15 +1168,10 @@ Inside the `BillingService` class:
         moyasarPaymentId: args.moyasarPaymentId,
         number,
         issuedAt,
-        subtotalMinor,
-        vatRate: this.VAT_RATE,
-        vatAmountMinor,
         totalMinor: args.totalMinor,
         currency: 'SAR',
         sellerName,
-        sellerVatNumber,
         buyerName: tenant?.name ?? 'Customer',
-        zatcaQr,
         status: 'issued',
       },
     });
@@ -1372,19 +1187,19 @@ Expected: PASS.
 
 ```bash
 git add src/billing/billing.service.ts src/billing/billing.service.spec.ts
-git commit -m "feat(billing): add issueZatcaInvoice with VAT split and sequential numbering"
+git commit -m "feat(billing): add issueInvoice with sequential numbering"
 ```
 
 ---
 
-### Task 11: BillingService — verifyAndActivate (golden payment rule, idempotent)
+### Task 10: BillingService — verifyAndActivate (golden payment rule, idempotent)
 
 **Files:**
 - Modify: `src/billing/billing.service.ts` (add `verifyAndActivate`)
 - Test: `src/billing/billing.service.spec.ts` (add a describe block)
 
 **Interfaces:**
-- Consumes: `MoyasarClient.fetchPayment`; `PrismaService.subscription`, `PrismaService.invoice`; `issueZatcaInvoice`; `resolvePlan`, `priceForCycle`.
+- Consumes: `MoyasarClient.fetchPayment`; `PrismaService.subscription`, `PrismaService.invoice`; `issueInvoice`; `resolvePlan`, `priceForCycle`.
 - Produces: `verifyAndActivate(paymentId: string): Promise<ActivationResult>` and `interface ActivationResult { activated: boolean; reason?: string }`. Activates ONLY when the re-fetched payment matches `status==='paid'`, `amount===expected`, `currency==='SAR'`, `metadata.tenant_id===subscription.tenantId`. Idempotent: if an `Invoice` with that `moyasarPaymentId` already exists → `{ activated: false, reason: 'already_processed' }` with no side effects.
 
 - [ ] **Step 1: Write the failing test (append to billing.service.spec.ts)**
@@ -1588,7 +1403,7 @@ Inside the `BillingService` class:
       },
     });
 
-    await this.issueZatcaInvoice({
+    await this.issueInvoice({
       tenantId,
       subscriptionId: subscription.id,
       moyasarPaymentId: payment.id,
@@ -1613,7 +1428,7 @@ git commit -m "feat(billing): add verifyAndActivate with re-fetch, tamper checks
 
 ---
 
-### Task 12: BillingService — transitionStatus, getSubscriptionView, cancel, getInvoice
+### Task 11: BillingService — transitionStatus, getSubscriptionView, cancel, getInvoice
 
 **Files:**
 - Modify: `src/billing/billing.service.ts` (add four methods)
@@ -1712,15 +1527,10 @@ describe('BillingService.getInvoice', () => {
       moyasarPaymentId: 'payment_x',
       number: 'ATHAR-000001',
       issuedAt: new Date('2026-06-29T12:00:00Z'),
-      subtotalMinor: 52087,
-      vatRate: 0.15,
-      vatAmountMinor: 7813,
       totalMinor: 59900,
       currency: 'SAR',
       sellerName: 'Athar',
-      sellerVatNumber: '300000000000003',
       buyerName: 'Acme',
-      zatcaQr: 'base64==',
       status: 'issued',
     };
     const prisma = {
@@ -1868,15 +1678,10 @@ Inside the `BillingService` class:
       moyasarPaymentId: invoice.moyasarPaymentId,
       number: invoice.number,
       issuedAt: invoice.issuedAt.toISOString(),
-      subtotalMinor: invoice.subtotalMinor,
-      vatRate: invoice.vatRate,
-      vatAmountMinor: invoice.vatAmountMinor,
       totalMinor: invoice.totalMinor,
       currency: invoice.currency,
       sellerName: invoice.sellerName,
-      sellerVatNumber: invoice.sellerVatNumber,
       buyerName: invoice.buyerName,
-      zatcaQr: invoice.zatcaQr,
       status: invoice.status as 'issued' | 'refunded',
     };
   }
@@ -1896,7 +1701,7 @@ git commit -m "feat(billing): add transitionStatus, subscription view, cancel, g
 
 ---
 
-### Task 13: BillingController + module wiring
+### Task 12: BillingController + module wiring
 
 **Files:**
 - Create: `src/billing/billing.controller.ts`
@@ -2153,7 +1958,7 @@ git commit -m "feat(billing): add BillingController routes and BillingModule wir
 
 ---
 
-### Task 14: Env vars + global ValidationPipe + full suite green
+### Task 13: Env vars + global ValidationPipe + full suite green
 
 **Files:**
 - Modify: `.env.example`
@@ -2173,9 +1978,8 @@ MOYASAR_SECRET_KEY=sk_test_xxx
 MOYASAR_WEBHOOK_SECRET=whsec_xxx
 # Billing
 BILLING_CALLBACK_URL=https://app.athar.sa/billing/callback
-# ZATCA / seller identity
+# Seller identity
 ATHAR_SELLER_NAME=Athar
-ATHAR_SELLER_VAT_NUMBER=300000000000003
 ```
 
 - [ ] **Step 2: Ensure a global ValidationPipe in `src/main.ts`**
@@ -2190,14 +1994,14 @@ app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: t
 
 - [ ] **Step 3: Run the full billing suite + typecheck**
 
-Run: `npm run typecheck && npm test -- billing && npm test -- zatca && npm test -- usage.guard`
+Run: `npm run typecheck && npm test -- billing && npm test -- usage.guard`
 Expected: all green; no type errors.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add .env.example src/main.ts
-git commit -m "chore(billing): document Moyasar/ZATCA env vars and enforce DTO validation"
+git commit -m "chore(billing): document Moyasar env vars and enforce DTO validation"
 ```
 
 ---
@@ -2208,41 +2012,40 @@ git commit -m "chore(billing): document Moyasar/ZATCA env vars and enforce DTO v
 
 | Spec item | Task(s) |
 |---|---|
-| `POST /billing/subscribe` (intent, given_id, metadata, callback_url, amount halalas) | 9 (service), 13 (route) |
-| `POST /billing/webhook` (public, secret_token timingSafeEqual → 401, re-fetch, payment_paid activates, payment_failed → past_due, 200 fast) | 5, 6, 11, 13 |
-| `GET /billing/subscription` (status + usage vs caps) | 12, 13 |
-| `POST /billing/cancel` (canceled + cancelAtPeriodEnd) | 12, 13 |
-| `GET /billing/invoice/:id` (tenant isolation → 404) | 12, 13 |
-| `BillingService`: createPaymentIntent / verifyAndActivate / issueZatcaInvoice / transitionStatus | 9 / 11 / 10 / 12 |
-| `UsageGuard.canConsume(tenantId, kind)` — caps for text/image/search, past_due/canceled deny | 7 |
+| `POST /billing/subscribe` (intent, given_id, metadata, callback_url, amount halalas) | 8 (service), 12 (route) |
+| `POST /billing/webhook` (public, secret_token timingSafeEqual → 401, re-fetch, payment_paid activates, payment_failed → past_due, 200 fast) | 4, 5, 10, 12 |
+| `GET /billing/subscription` (status + usage vs caps) | 11, 12 |
+| `POST /billing/cancel` (canceled + cancelAtPeriodEnd) | 11, 12 |
+| `GET /billing/invoice/:id` (tenant isolation → 404) | 11, 12 |
+| `BillingService`: createPaymentIntent / verifyAndActivate / issueInvoice / transitionStatus | 8 / 10 / 9 / 11 |
+| `UsageGuard.canConsume(tenantId, kind)` — caps for text/image/search, past_due/canceled deny | 6 |
 | `PlanDefinition` + `TRIAL_PLAN` config | 3 |
 | New `Invoice` Prisma model (new migration, LR-004) | 1 |
-| ZATCA QR (TLV → Base64), mandatory fields, sequential per-tenant number | 4, 10 |
+| Simple subscription invoice: charged total, sequential per-tenant number | 9 |
 | Types: `MoyasarWebhookEvent`, `MoyasarPayment`, `Invoice`/`InvoiceView` | 2 |
-| Golden payment rule: activate only after re-fetch matches status/amount/currency/metadata.tenant_id | 11 |
-| Idempotency: webhook replay/duplicate → no double activation (on payment.id) | 11, 13 |
-| Tamper handling: amount/currency/metadata mismatch → no activation | 11 |
-| Amounts in minor units everywhere | 3, 9, 10, 11 |
-| Multi-tenant isolation (invoice of another tenant → 404) | 12 |
-| Engine consumes UsageGuard (exported from module) | 13 |
-| Error table: `payment_failed` → past_due; replay → idempotent 200; tamper → no activation; secret mismatch → 401; given_id duplicate → "exists, fetch" | 5, 11, 13 (given_id-duplicate handling is the `already_processed` short-circuit + deterministic given_id) |
+| Golden payment rule: activate only after re-fetch matches status/amount/currency/metadata.tenant_id | 10 |
+| Idempotency: webhook replay/duplicate → no double activation (on payment.id) | 10, 12 |
+| Tamper handling: amount/currency/metadata mismatch → no activation | 10 |
+| Amounts in minor units everywhere | 3, 8, 9, 10 |
+| Multi-tenant isolation (invoice of another tenant → 404) | 11 |
+| Engine consumes UsageGuard (exported from module) | 12 |
+| Error table: `payment_failed` → past_due; replay → idempotent 200; tamper → no activation; secret mismatch → 401; given_id duplicate → "exists, fetch" | 4, 10, 12 (given_id-duplicate handling is the `already_processed` short-circuit + deterministic given_id) |
 
-**Acceptance-criteria mapping:** trialing→active+invoice on paid webhook (Task 11 test "activates"); failed payment → past_due with retry path (Task 13 `payment_failed` test + Task 11 reactivation on next paid); activation only after re-fetch match (Task 11 mismatch tests); replay idempotent + bad secret 401 (Task 11 `already_processed`, Task 13 `bad secret`); canConsume rejects over-cap for all three kinds incl. search and on past_due/canceled (Task 7); subscription view + cancel + invoice tenant-scoped (Task 12); amounts in halalas (Tasks 3/9/10/11); tenant isolation (Task 12).
+**Acceptance-criteria mapping:** trialing→active+invoice on paid webhook (Task 10 test "activates"); failed payment → past_due with retry path (Task 12 `payment_failed` test + Task 10 reactivation on next paid); activation only after re-fetch match (Task 10 mismatch tests); replay idempotent + bad secret 401 (Task 10 `already_processed`, Task 12 `bad secret`); canConsume rejects over-cap for all three kinds incl. search and on past_due/canceled (Task 6); subscription view + cancel + invoice tenant-scoped (Task 11); amounts in halalas (Tasks 3/8/9/10); tenant isolation (Task 11).
 
-**Intentionally deferred (per spec §خارج النطاق):** frontend payment form/pages (Phase 7); auth/registration internals (Phase 3 — guards/decorator are imported, not built here); engine generation logic (Phase 1 — only `canConsume` is provided); multiple plans / upgrade-downgrade / proration; automatic refund flow (manual via Moyasar dashboard — note `payment_refunded`/`invoice_*` event types are typed in Task 2 but not wired to side effects, matching deferral); ZATCA Phase-2 (Integration/Clearance — structure accommodates it); saved-card recurring auto-renewal. The trial-expiry → past_due transition is implemented as `transitionStatus(tenantId, 'past_due')` (Task 12) and is invoked by a scheduled job whose scheduling belongs to Phase 5 (Reminders) infra; the method and its behavior are covered here.
+**Intentionally deferred (per spec §خارج النطاق):** frontend payment form/pages (Phase 7); auth/registration internals (Phase 3 — guards/decorator are imported, not built here); engine generation logic (Phase 1 — only `canConsume` is provided); multiple plans / upgrade-downgrade / proration; automatic refund flow (manual via Moyasar dashboard — note `payment_refunded`/`invoice_*` event types are typed in Task 2 but not wired to side effects, matching deferral); PDF rendering of the invoice; saved-card recurring auto-renewal. The trial-expiry → past_due transition is implemented as `transitionStatus(tenantId, 'past_due')` (Task 11) and is invoked by a scheduled job whose scheduling belongs to Phase 5 (Reminders) infra; the method and its behavior are covered here.
 
-**2. Placeholder scan:** No "TBD"/"implement later"/"add validation"/"similar to Task N" present. Every code step contains complete code. `verifyWebhookSecret`, `buildZatcaQr`, `MoyasarClient.fetchPayment`, all `BillingService` methods, and all routes are fully written. The `payment_refunded`/`invoice_*` types are deliberately defined-but-unwired (documented above), not placeholders.
+**2. Placeholder scan:** No "TBD"/"implement later"/"add validation"/"similar to Task N" present. Every code step contains complete code. `verifyWebhookSecret`, `MoyasarClient.fetchPayment`, all `BillingService` methods, and all routes are fully written. The `payment_refunded`/`invoice_*` types are deliberately defined-but-unwired (documented above), not placeholders.
 
 **3. Type consistency:**
-- `ConsumeDecision` shape `{ allowed, used, cap, reason? }` — defined Task 2, produced Task 7, identical.
-- `MoyasarPayment` / `MoyasarWebhookEvent` — defined Task 2, consumed Tasks 6, 11, 13; field names (`metadata.tenant_id`, `data.id`, `secret_token`) consistent.
-- `PaymentIntentResponse`, `ActivationResult`, `SubscriptionView`, `IssueInvoiceArgs`, `InvoiceView` — each defined once and consumed consistently across Tasks 9–13.
-- `priceForCycle(plan, cycle)` / `getCap(plan, kind)` / `resolvePlan(code)` — signatures from Task 3 used identically in Tasks 7, 9, 11, 12.
-- `monthWindowStart()` — defined Task 7, reused in Task 12 (single source, imported, not redefined).
-- `buildZatcaQr(fields)` / `minorToDecimalString(minor)` — Task 4 signatures match the Task 10 call site exactly (decimal strings via `minorToDecimalString`).
-- `verifyWebhookSecret(received, expected)` — Task 5 signature matches Task 13 usage.
-- `MoyasarClient.fetchPayment(id)` — Task 6 signature matches Task 11 usage.
-- Prisma `Invoice` fields (Task 1) match `issueZatcaInvoice` `data` (Task 10) and `InvoiceView` mapping (Task 12) one-to-one.
-- `given_id` is uuidv5 (deterministic per `sub:{tenantId}:{attempt}`) per the spec's `uuidv5("sub:{tenantId}:{attempt}")` and the moyasar skill's deterministic-given_id pattern — consistent in Task 9.
+- `ConsumeDecision` shape `{ allowed, used, cap, reason? }` — defined Task 2, produced Task 6, identical.
+- `MoyasarPayment` / `MoyasarWebhookEvent` — defined Task 2, consumed Tasks 5, 10, 12; field names (`metadata.tenant_id`, `data.id`, `secret_token`) consistent.
+- `PaymentIntentResponse`, `ActivationResult`, `SubscriptionView`, `IssueInvoiceArgs`, `InvoiceView` — each defined once and consumed consistently across Tasks 8–12.
+- `priceForCycle(plan, cycle)` / `getCap(plan, kind)` / `resolvePlan(code)` — signatures from Task 3 used identically in Tasks 6, 8, 10, 11.
+- `monthWindowStart()` — defined Task 6, reused in Task 11 (single source, imported, not redefined).
+- `verifyWebhookSecret(received, expected)` — Task 4 signature matches Task 12 usage.
+- `MoyasarClient.fetchPayment(id)` — Task 5 signature matches Task 10 usage.
+- Prisma `Invoice` fields (Task 1) match `issueInvoice` `data` (Task 9) and `InvoiceView` mapping (Task 11) one-to-one.
+- `given_id` is uuidv5 (deterministic per `sub:{tenantId}:{attempt}`) per the spec's `uuidv5("sub:{tenantId}:{attempt}")` and the moyasar skill's deterministic-given_id pattern — consistent in Task 8.
 
 **Scope:** Single subsystem (billing). Produces working, tested software (migrated Invoice table, service with full Moyasar flow, guard consumed by the engine, controller routes) with a passing Jest suite per task.
