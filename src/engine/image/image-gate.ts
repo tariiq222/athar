@@ -58,7 +58,7 @@ export function decideMethod(rate: number): GateDecision {
 
 /**
  * Real-call harness entry point. Not unit-tested — run manually:
- *   OPENROUTER_API_KEY=... npx ts-node test/image-gate/run-gate.ts
+ *   OPENROUTER_API_KEY=... npx ts-node src/engine/image/image-gate.ts
  *
  * Generates 20 sample generations on GPT-5-image, reads each back with
  * a vision model, computes the breakage rate, prints the decision.
@@ -68,10 +68,10 @@ export async function runGate(): Promise<{
   samples: GateSample[];
   rate: number;
 }> {
-  // Stub: the actual implementation lives in run-gate.runner.ts (not committed
-  // to keep tests offline). See README in test/image-gate for the manual recipe.
+  // Stub: the actual implementation lives in image-gate.runner.ts (not committed
+  // to keep tests offline). See README in src/engine/image for the manual recipe.
   throw new Error(
-    'runGate() must be invoked via the manual harness (test/image-gate/run-gate.runner.ts). ' +
+    'runGate() must be invoked via the manual harness (src/engine/image/image-gate.runner.ts). ' +
       'See docs/decisions/image-gate.md for the procedure.',
   );
 }
