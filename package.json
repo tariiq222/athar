@@ -10,7 +10,9 @@
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "lint": "eslint \"src/**/*.ts\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed:occasions": "tsx prisma/seeds/hijri-occasion.seeder.ts",
+    "seed:occasions:dev": "cross-env DATABASE_URL=postgresql://athar:athar@localhost:5442/athar?schema=public tsx prisma/seeds/hijri-occasion.seeder.ts"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -44,6 +46,7 @@
     "class-validator": "^0.15.1",
     "ioredis": "^5.11.1",
     "minio": "^8.0.7",
+    "moment-hijri": "^3.0.0",
     "openai": "^6.45.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -61,6 +64,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/sharp": "^0.31.1",
     "@types/twitter-text": "^3.1.10",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "eslint": "^10.6.0",
     "eslint-plugin-jest": "^29.15.3",
@@ -69,6 +73,7 @@
     "prisma": "^7.8.0",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.0"
   }
