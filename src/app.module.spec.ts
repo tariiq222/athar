@@ -23,6 +23,8 @@ process.env.MINIO_ACCESS_KEY ||= 'test-minio';
 process.env.MINIO_SECRET_KEY ||= 'test-minio-secret';
 process.env.MINIO_BUCKET ||= 'athar-images';
 process.env.OPENROUTER_API_KEY ||= 'test-openrouter-key';
+process.env.REDIS_HOST ||= 'localhost';
+process.env.REDIS_PORT ||= '6379';
 
 describe('AppModule', () => {
   it('compiles with auth, accounts and user controllers wired', async () => {
