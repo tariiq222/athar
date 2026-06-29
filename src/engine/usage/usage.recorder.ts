@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PlanDefinition, resolvePlan } from '../../config/billing-plans';
 
 export interface UsageInput {
   tenantId: string;
@@ -9,10 +10,34 @@ export interface UsageInput {
   subscriptionId?: string;
 }
 
+export interface ConsumeDecision {
+  allowed: boolean;
+  used: number;
+  cap: number;
+  reason?: string;
+}
+
+/**
+ * Minimal Subscription shape we need to make cap / status decisions.
+ * Kept inline (not imported from generated/prisma) so the recorder stays
+ * decoupled from Prisma's exact row shape and easy to mock in tests.
+ */
+interface SubscriptionRow {
+  id: string;
+  plan: string;
+  status: string;
+  trialEndsAt: Date | null;
+}
+
 /**
  * Single place that writes `UsageRecord` rows and answers "is this tenant
  * over its monthly unit cap?". The quota check is what lets the month-plan
  * distinguish `skipped_quota` from `provider_error` (Task 21).
+ *
+ * `canConsume` and `getCurrentPlan` extend the recorder with plan-aware
+ * per-kind caps. `isOverQuota` is kept (legacy) for the in-line usage in
+ * `pipeline.service.ts` and `live-search.provider.ts`; Task 7 removes those
+ * callers.
  */
 @Injectable()
 export class UsageRecorder {
@@ -42,5 +67,91 @@ export class UsageRecorder {
       where: { tenantId, createdAt: { gte: startOfMonth } },
     });
     return (agg._sum.units ?? 0) >= cap;
+  }
+
+  /**
+   * Resolve the active plan for a tenant. Reads the most recent Subscription
+   * row; if none exists, falls back to the trial plan (defensive — a brand-new
+   * tenant may not have a row yet).
+   */
+  async getCurrentPlan(tenantId: string): Promise<PlanDefinition> {
+    const sub = await this.prisma.subscription.findFirst({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!sub) return resolvePlan('trial');
+    return resolvePlan(sub.plan);
+  }
+
+  /**
+   * Decide whether a tenant may consume one more unit of the given kind,
+   * driven by their `planDef`. Handles:
+   *   - past_due / canceled: hard deny with Arabic reason
+   *   - trialing with expired trial: lazy transition to past_due, then deny
+   *   - per-kind cap comparison against this month's usage
+   */
+  async canConsume(
+    tenantId: string,
+    kind: 'text' | 'image' | 'search',
+    planDef: PlanDefinition,
+  ): Promise<ConsumeDecision> {
+    const sub = (await this.prisma.subscription.findFirst({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    })) as SubscriptionRow | null;
+
+    const status = sub?.status ?? 'trialing';
+
+    if (status === 'past_due' || status === 'canceled') {
+      const statusAr = status === 'past_due' ? 'متأخّر السداد' : 'ملغى';
+      return {
+        allowed: false,
+        used: 0,
+        cap: 0,
+        reason: `الاشتراك ${statusAr} (${status})؛ جدّد للاستمرار.`,
+      };
+    }
+
+    // Lazy trial-expiry: trial ended without payment. Flip to past_due
+    // (a write) so the next reads see the correct status, then deny.
+    if (status === 'trialing' && sub?.trialEndsAt && sub.trialEndsAt < new Date()) {
+      await this.prisma.subscription.update({
+        where: { id: sub.id },
+        data: { status: 'past_due' },
+      });
+      return {
+        allowed: false,
+        used: 0,
+        cap: 0,
+        reason: 'انتهت التجربة المجانية؛ يلزم الاشتراك.',
+      };
+    }
+
+    const cap = (
+      {
+        text: planDef.monthlyDraftCap,
+        image: planDef.monthlyImageCap,
+        search: planDef.monthlySearchCap,
+      } as const
+    )[kind];
+
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const agg = await this.prisma.usageRecord.aggregate({
+      _sum: { units: true },
+      where: { tenantId, kind, createdAt: { gte: startOfMonth } },
+    });
+    const used = agg._sum.units ?? 0;
+
+    if (used >= cap) {
+      const kindAr = { text: 'المسودّات', image: 'الصور', search: 'عمليات البحث' }[kind];
+      return {
+        allowed: false,
+        used,
+        cap,
+        reason: `بلغت سقف ${kindAr} الشهري (${used}/${cap}).`,
+      };
+    }
+
+    return { allowed: true, used, cap };
   }
 }
