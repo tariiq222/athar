@@ -4,6 +4,7 @@ import { BrandModule } from './brand.module';
 import { BrandController } from './brand.controller';
 import { OnboardingService } from './onboarding.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AccountProfileService } from '../accounts/account-profile.service';
 import { CONTENT_PROVIDER, SEARCH_PROVIDER } from '../engine/providers/provider.tokens';
 import { FakeContentProvider } from '../engine/providers/fake-content-provider';
 import { FakeSearchProvider } from '../engine/providers/fake-search-provider';
@@ -25,7 +26,9 @@ describe('BrandModule', () => {
       imports: [ConfigModule.forRoot({ ignoreEnvFile: true }), BrandModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({ usageRecord: { create: jest.fn() }, brandProfile: {}, accountProfile: {} })
+      .useValue({ usageRecord: { create: jest.fn() }, brandProfile: {} })
+      .overrideProvider(AccountProfileService)
+      .useValue({})
       .overrideProvider(ClaudeClient)
       .useValue({} as any)
       .overrideProvider(OpenAiImageClient)
