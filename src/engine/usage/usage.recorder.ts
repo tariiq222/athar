@@ -35,9 +35,8 @@ interface SubscriptionRow {
  * distinguish `skipped_quota` from `provider_error` (Task 21).
  *
  * `canConsume` and `getCurrentPlan` extend the recorder with plan-aware
- * per-kind caps. `isOverQuota` is kept (legacy) for the in-line usage in
- * `pipeline.service.ts` and `live-search.provider.ts`; Task 7 removes those
- * callers.
+ * per-kind caps. The old `isOverQuota` helper was removed after its callers
+ * migrated to `canConsume`.
  */
 @Injectable()
 export class UsageRecorder {
@@ -53,20 +52,6 @@ export class UsageRecorder {
         subscriptionId: input.subscriptionId,
       },
     });
-  }
-
-  async isOverQuota(tenantId: string): Promise<boolean> {
-    const cap = Number(process.env.ENGINE_MONTHLY_UNIT_CAP ?? 100000);
-    const startOfMonth = new Date(
-      new Date().getFullYear(),
-      new Date().getMonth(),
-      1,
-    );
-    const agg = await this.prisma.usageRecord.aggregate({
-      _sum: { units: true },
-      where: { tenantId, createdAt: { gte: startOfMonth } },
-    });
-    return (agg._sum.units ?? 0) >= cap;
   }
 
   /**

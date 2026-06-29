@@ -21,10 +21,11 @@ describe('BillingService', () => {
     });
 
     const updates: any[] = [];
-    const subscriptionUpdate = jest.fn(async ({ where, data }: any) => {
+    const subscriptionUpdateMany = jest.fn(async ({ where, data }: any) => {
       updates.push({ where, data });
       if (opts.update) return opts.update({ where, data });
-      return { id: where.id, ...data };
+      // Real Prisma updateMany returns `{ count }`.
+      return { count: 1 };
     });
 
     const invoices: any[] = [];
@@ -41,11 +42,11 @@ describe('BillingService', () => {
       return { id: 't1', name: 'Acme' };
     });
 
-    const txState = { subscriptionUpdate, invoiceCreate, tenantFindFirst };
+    const txState = { subscriptionUpdateMany, invoiceCreate, tenantFindFirst };
     const txPrisma = {
       subscription: {
         findFirst: subscriptionFindFirst,
-        update: subscriptionUpdate,
+        updateMany: subscriptionUpdateMany,
       },
       invoice: {
         findFirst: jest.fn(async (args: any) => {
@@ -58,10 +59,20 @@ describe('BillingService', () => {
     };
     const transaction = jest.fn(async (fn: any) => fn(txPrisma));
 
+    // Bare `update` for non-activate paths (cancel / payment_failed).
+    // Records each call into the shared `updates` array so tests can assert
+    // that the past_due flip happened — the activate path uses updateMany,
+    // these paths use update, but both write to the same observable store.
+    const subscriptionUpdate = opts.subscriptionUpdate ?? jest.fn(async (args: any) => {
+      updates.push(args);
+      return { id: args.where.id, ...args.data };
+    });
+
     const prisma = {
       subscription: {
         findFirst: subscriptionFindFirst,
         update: subscriptionUpdate,
+        updateMany: subscriptionUpdateMany,
         findMany: opts.subscriptionFindMany ?? jest.fn(async () => []),
       },
       invoice: {
@@ -286,6 +297,36 @@ describe('BillingService', () => {
       expect(invoices).toHaveLength(0);
     });
 
+    it('replay race: read shows trialing but concurrent retry already flipped to active — no new invoice', async () => {
+      // First findFirst returns the still-trialing row (we are about to write),
+      // but our updateMany returns count=0 because a concurrent webhook already
+      // won the race and flipped the row to active. We must NOT issue a second
+      // invoice; the existing one (Invoice.moyasarPaymentId is unique) would
+      // otherwise throw P2002 and surface as a 500.
+      const { svc, invoices, updates } = makeSvc({
+        findFirst: jest.fn(async () => ({
+          id: 's1',
+          plan: 'trial',
+          status: 'trialing',
+          trialEndsAt: new Date(Date.now() + 86400_000),
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+          tenantId: 't1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })),
+        update: (_args: any) => ({ count: 0 }),
+      });
+      const out = await svc.verifyAndActivate('pay_1', { tenantId: 't1', userId: 'u1' });
+      expect(out.status).toBe('active');
+      expect(out.subscriptionId).toBe('s1');
+      // updateMany was attempted exactly once, and it was a no-op.
+      expect(updates).toHaveLength(1);
+      expect(updates[0].where).toEqual({ id: 's1', status: { not: 'active' } });
+      // No new invoice because the other retry already won.
+      expect(invoices).toHaveLength(0);
+    });
+
     it('accepts annual amount when metadata.cycle=annual', async () => {
       const { svc, invoices } = makeSvc({
         moyasar: {
@@ -303,6 +344,28 @@ describe('BillingService', () => {
       const out = await svc.verifyAndActivate('pay_1', { tenantId: 't1', userId: 'u1' });
       expect(out.status).toBe('active');
       expect(invoices[0].totalMinor).toBe(BUSINESS_PLAN.annualPriceMinor);
+    });
+
+    it('rejects unknown metadata.cycle (fail closed, no amount reliance)', async () => {
+      const { svc, invoices } = makeSvc({
+        moyasar: {
+          createPaymentIntent: jest.fn(),
+          fetchPayment: jest.fn(async () => ({
+            id: 'pay_1',
+            status: 'paid',
+            // amount matches monthly BY ACCIDENT — without explicit cycle
+            // rejection this would slip through; we want a hard reject instead.
+            amount: 59900,
+            currency: 'SAR',
+            source: { type: 'creditcard' },
+            metadata: { tenant_id: 't1', plan_code: 'business', cycle: 'moonthly' },
+          })),
+        },
+      });
+      await expect(
+        svc.verifyAndActivate('pay_1', { tenantId: 't1', userId: 'u1' }),
+      ).rejects.toThrow(/billing cycle/i);
+      expect(invoices).toHaveLength(0);
     });
 
     it('uses INV- prefix from INVOICE_NUMBER_PREFIX env', async () => {
@@ -392,7 +455,7 @@ describe('BillingService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
         })),
-        update: jest.fn(async ({ where, data }: any) => {
+        subscriptionUpdate: jest.fn(async ({ where, data }: any) => {
           updates.push({ where, data });
           return { id: where.id, ...data };
         }),
@@ -454,7 +517,7 @@ describe('BillingService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
         })),
-        update: jest.fn(async ({ where, data }: any) => {
+        subscriptionUpdate: jest.fn(async ({ where, data }: any) => {
           updates.push({ where, data });
           return { id: where.id, ...data };
         }),

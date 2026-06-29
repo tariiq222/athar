@@ -17,24 +17,6 @@ describe('UsageRecorder', () => {
       },
     });
   });
-
-  it('isOverQuota is true at or above the cap', async () => {
-    process.env.ENGINE_MONTHLY_UNIT_CAP = '10';
-    const aggregate = jest.fn().mockResolvedValue({ _sum: { units: 10 } });
-    const prisma = { usageRecord: { create: jest.fn(), aggregate } } as any;
-    const rec = new UsageRecorder(prisma);
-    expect(await rec.isOverQuota('tn')).toBe(true);
-    delete process.env.ENGINE_MONTHLY_UNIT_CAP;
-  });
-
-  it('isOverQuota is false below the cap and treats null sum as 0', async () => {
-    process.env.ENGINE_MONTHLY_UNIT_CAP = '10';
-    const aggregate = jest.fn().mockResolvedValue({ _sum: { units: null } });
-    const prisma = { usageRecord: { create: jest.fn(), aggregate } } as any;
-    const rec = new UsageRecorder(prisma);
-    expect(await rec.isOverQuota('tn')).toBe(false);
-    delete process.env.ENGINE_MONTHLY_UNIT_CAP;
-  });
 });
 
 describe('UsageRecorder.canConsume', () => {

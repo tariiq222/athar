@@ -6,6 +6,7 @@ import { EngineModule } from '../engine/engine.module';
 import { TenantModule } from '../tenant/tenant.module';
 import { BillingController } from './billing.controller';
 import { BillingService } from './billing.service';
+import { BillingSchedulerService } from './billing-scheduler.service';
 import { MoyasarClient } from './moyasar.client';
 import {
   TRIAL_EXPIRY_QUEUE,
@@ -30,6 +31,7 @@ import {
         MoyasarClient.fromSecret(cfg.get<string>('MOYASAR_SECRET_KEY') ?? ''),
     },
     TrialExpiryProcessor,
+    BillingSchedulerService,
   ],
   exports: [BillingService],
 })

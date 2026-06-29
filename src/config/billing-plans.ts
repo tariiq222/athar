@@ -6,7 +6,6 @@ export interface PlanDefinition {
   priceSar: number;
   priceMinor: number;
   annualPriceMinor: number;
-  billingCycle: 'monthly' | 'annual';
   trialDays: number;
   monthlyDraftCap: number;
   monthlyImageCap: number;
@@ -19,7 +18,6 @@ export const TRIAL_PLAN: PlanDefinition = {
   priceSar: 0,
   priceMinor: 0,
   annualPriceMinor: 0,
-  billingCycle: 'monthly',
   trialDays: 7,
   monthlyDraftCap: 10,
   monthlyImageCap: 5,
@@ -32,7 +30,6 @@ export const BUSINESS_PLAN: PlanDefinition = {
   priceSar: 599,
   priceMinor: 59900,
   annualPriceMinor: 59900 * 10, // 2 months free on annual
-  billingCycle: 'monthly',
   trialDays: 0,
   monthlyDraftCap: 60,
   monthlyImageCap: 30,

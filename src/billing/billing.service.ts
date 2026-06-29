@@ -78,6 +78,11 @@ export class BillingService {
     }
 
     if (event.type === 'payment_failed') {
+      // Trust boundary: trusts metadata.tenant_id to identify which tenant's
+      // subscription to freeze. The web-hook HMAC secret is the sole
+      // authentication; if the secret leaks, an attacker could freeze any
+      // tenant by emitting a forged payment_failed. Acceptable per spec
+      // (secret lives in secrets manager).
       const sub = await this.prisma.subscription.findFirst({
         where: { tenantId: ctx.tenantId },
         orderBy: { createdAt: 'desc' },
@@ -106,9 +111,15 @@ export class BillingService {
       throw paymentFailed(payment.source.message ?? 'not paid');
     }
 
+    // Reject unknown metadata.cycle explicitly — silently coercing to
+    // 'monthly' would let a forged metadata slip through and rely on the
+    // amount mismatch as a coincidental defense. Fail closed instead.
+    if (payment.metadata.cycle !== 'monthly' && payment.metadata.cycle !== 'annual') {
+      throw paymentFailed('invalid billing cycle');
+    }
+
     // Axis 2: amount must match expected (monthly vs annual)
-    const cycle: 'monthly' | 'annual' =
-      payment.metadata.cycle === 'annual' ? 'annual' : 'monthly';
+    const cycle: 'monthly' | 'annual' = payment.metadata.cycle;
     const expected =
       cycle === 'annual' ? BUSINESS_PLAN.annualPriceMinor : BUSINESS_PLAN.priceMinor;
     if (payment.amount !== expected) {
@@ -137,7 +148,8 @@ export class BillingService {
       });
       if (!sub) throw new Error('no subscription');
 
-      // Replay guard — already active with a future period end → return idempotent.
+      // Cheap pre-check — already active with a future period end → return
+      // idempotent without taking the update path at all.
       if (
         sub.status === 'active' &&
         sub.currentPeriodEnd &&
@@ -147,8 +159,12 @@ export class BillingService {
       }
 
       const periodEnd = new Date(Date.now() + PERIOD_MS);
-      const updated = await tx.subscription.update({
-        where: { id: sub.id },
+      // updateMany (not update) — the `where` excludes rows that are already
+      // 'active'. This closes the TOCTOU between the read above and the write:
+      // if a concurrent webhook retry already flipped this row to 'active' in
+      // another transaction, count comes back 0 and we bail idempotently.
+      const updateResult = await tx.subscription.updateMany({
+        where: { id: sub.id, status: { not: 'active' } },
         data: {
           status: 'active',
           plan: 'business',
@@ -156,6 +172,9 @@ export class BillingService {
           cancelAtPeriodEnd: false,
         },
       });
+      if (updateResult.count === 0) {
+        return { status: 'active' as const, subscriptionId: sub.id };
+      }
 
       const invoiceNumber = await this.nextInvoiceNumber(tx, ctx.tenantId);
       const tenant = await tx.tenant.findFirst({
@@ -174,7 +193,7 @@ export class BillingService {
         },
       });
 
-      return { status: 'active' as const, subscriptionId: updated.id };
+      return { status: 'active' as const, subscriptionId: sub.id };
     });
   }
 
