@@ -27,9 +27,11 @@ enum SubscriptionStatus {
 }
 
 model Tenant {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  name       String
+  deletedAt  DateTime? // soft-delete marker (PDPL)
+  purgeAfter DateTime? // scheduled hard-delete time (PDPL purge)
+  createdAt  DateTime  @default(now())
 
   users         User[]
   brandProfiles BrandProfile[]
@@ -38,12 +40,14 @@ model Tenant {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  tenantId     String
-  email        String   @unique
-  passwordHash String
-  name         String?
-  createdAt    DateTime @default(now())
+  id               String    @id @default(cuid())
+  tenantId         String
+  email            String    @unique
+  passwordHash     String
+  name             String?
+  refreshTokenHash String? // hash of the currently-valid refresh token (rotation)
+  deletedAt        DateTime? // soft-delete marker (PDPL)
+  createdAt        DateTime  @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
