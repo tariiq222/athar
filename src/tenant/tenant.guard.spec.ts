@@ -22,7 +22,7 @@ describe('TenantGuard', () => {
     } catch (e) {
       caught = e;
     }
-    // AppException's body is the AppException itself; getResponse() returns the envelope.
+    // AppError's body is the AppError itself; getResponse() returns the envelope.
     expect(caught).toBeDefined();
     expect((caught as { getResponse: () => unknown }).getResponse()).toMatchObject({
       error: 'UNAUTHENTICATED',

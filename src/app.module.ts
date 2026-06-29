@@ -9,6 +9,9 @@ import { TenantModule } from './tenant/tenant.module';
 import { UserModule } from './user/user.module';
 import { AccountProfileModule } from './accounts/account-profile.module';
 import { BrandModule } from './brand/brand.module';
+import { PostModule } from './posts/post.module';
+import { OccasionModule } from './occasions/occasion.module';
+import { CalendarModule } from './calendar/calendar.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { buildValidationPipe } from './common/dto-validation';
 
@@ -23,6 +26,9 @@ import { buildValidationPipe } from './common/dto-validation';
     UserModule,
     AccountProfileModule,
     BrandModule,
+    PostModule,
+    OccasionModule,
+    CalendarModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: buildValidationPipe },

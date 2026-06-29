@@ -1,0 +1,42 @@
+import type { PostStatus } from '../generated/prisma/enums';
+import { AppError } from '../common/errors/error-envelope';
+
+export interface PostStatusTransition {
+  from: PostStatus;
+  to: PostStatus;
+}
+
+// The only transitions this phase owns. approved → published belongs to Phase 5.
+export const ALLOWED_TRANSITIONS: readonly PostStatusTransition[] = [
+  { from: 'draft', to: 'pending_review' },
+  { from: 'pending_review', to: 'approved' },
+  { from: 'pending_review', to: 'draft' }, // reopen for more editing
+  { from: 'approved', to: 'pending_review' }, // pull approval back before publishing
+];
+
+export class PostStateMachine {
+  isAllowed(from: PostStatus, to: PostStatus): boolean {
+    return ALLOWED_TRANSITIONS.some((t) => t.from === from && t.to === to);
+  }
+
+  // Pure validation. Throws AppError on rejection; returns void on success.
+  assertTransition(currentStatus: PostStatus, transition: PostStatusTransition): void {
+    if (transition.to === 'published') {
+      throw new AppError(
+        422,
+        'PUBLISH_NOT_ALLOWED_HERE',
+        'النشر يتم في المرحلة الخامسة، وليس من هنا',
+      );
+    }
+    if (transition.from !== currentStatus) {
+      throw new AppError(
+        409,
+        'INVALID_TRANSITION',
+        'الحالة الحالية لا تطابق نقطة بداية الانتقال',
+      );
+    }
+    if (!this.isAllowed(transition.from, transition.to)) {
+      throw new AppError(409, 'INVALID_TRANSITION', 'انتقال غير مسموح به');
+    }
+  }
+}

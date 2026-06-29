@@ -5,7 +5,7 @@ import {
   ExceptionFilter,
   HttpException,
 } from '@nestjs/common';
-import { AppException, ErrorEnvelope } from '../errors/error-envelope';
+import { AppError, ErrorEnvelope } from '../errors/error-envelope';
 
 type StatusJsonResponse = {
   status(code: number): { json(body: unknown): unknown };
@@ -20,7 +20,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 
   private toEnvelope(exception: unknown): ErrorEnvelope {
-    if (exception instanceof AppException) {
+    if (exception instanceof AppError) {
       return exception.getEnvelope();
     }
 
