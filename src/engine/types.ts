@@ -90,7 +90,7 @@ export interface PipelineResult {
   postId: string;
   quotaStatus: QuotaStatus;
   critiqueIssues: string[];
-  imageMethod: ImageAsset['method'];
+  imageMethod: ImageAsset['method'] | null;
 }
 
 export interface MonthPlanProgress {
