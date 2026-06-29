@@ -77,6 +77,37 @@ export const ERRORS = {
     error: 'CONFIRMATION_REQUIRED',
     message: 'يلزم تأكيد الحذف صراحةً.',
   },
+  // Phase 5 — assisted manual publishing (FR-11/FR-12/FR-13, US-5.1/5.2/5.3)
+  NOT_APPROVED: {
+    statusCode: 409,
+    error: 'NOT_APPROVED',
+    message: 'لا يمكن تصدير بوست غير معتمد.',
+  },
+  EXCEEDS_PLATFORM_LIMIT: {
+    statusCode: 422,
+    error: 'EXCEEDS_PLATFORM_LIMIT',
+    message: 'النص بعد التنسيق يتجاوز حدّ المنصة.',
+  },
+  INVALID_STATUS_TRANSITION: {
+    statusCode: 409,
+    error: 'INVALID_STATUS_TRANSITION',
+    message: 'انتقال حالة غير مسموح به. النشر يتم فقط من approved.',
+  },
+  REMIND_AT_REQUIRED: {
+    statusCode: 422,
+    error: 'REMIND_AT_REQUIRED',
+    message: 'يلزم تحديد remindAt أو أن يكون للبوست scheduledAt.',
+  },
+  REMIND_AT_IN_PAST: {
+    statusCode: 422,
+    error: 'REMIND_AT_IN_PAST',
+    message: 'remindAt يجب أن يكون في المستقبل.',
+  },
+  REMINDER_ALREADY_SENT: {
+    statusCode: 409,
+    error: 'REMINDER_ALREADY_SENT',
+    message: 'لا يمكن إلغاء تذكير تم إرساله.',
+  },
 } as const satisfies Record<string, ErrorEnvelope>;
 
 export class AppError extends HttpException {
@@ -119,3 +150,21 @@ export const invalidTransition = () => make(ERRORS.INVALID_TRANSITION);
 export const contentLocked = () => make(ERRORS.CONTENT_LOCKED);
 export const notFound = () => make(ERRORS.NOT_FOUND);
 export const publishNotAllowedHere = () => make(ERRORS.PUBLISH_NOT_ALLOWED_HERE);
+
+// Phase 5 error helpers
+export const notApproved = () => make(ERRORS.NOT_APPROVED);
+export const exceedsPlatformLimit = (charCount: number, limitMax: number) =>
+  new AppError(
+    422,
+    'EXCEEDS_PLATFORM_LIMIT',
+    `النص بعد التنسيق (${charCount} حرفاً) يتجاوز حدّ المنصة (${limitMax}).`,
+  );
+export const invalidStatusTransition = (currentStatus: string) =>
+  new AppError(
+    409,
+    'INVALID_STATUS_TRANSITION',
+    `النشر مسموح فقط من approved؛ الحالة الحالية: ${currentStatus}.`,
+  );
+export const remindAtRequired = () => make(ERRORS.REMIND_AT_REQUIRED);
+export const remindAtInPast = () => make(ERRORS.REMIND_AT_IN_PAST);
+export const reminderAlreadySent = () => make(ERRORS.REMINDER_ALREADY_SENT);
