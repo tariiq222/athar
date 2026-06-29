@@ -162,7 +162,7 @@ describe('BillingController', () => {
 
   it('cancel delegates to billing.cancel', async () => {
     const { ctrl, billing } = make();
-    await ctrl.cancel(ctx, { confirm: true });
+    await ctrl.cancel(ctx);
     expect(billing.cancel).toHaveBeenCalledTimes(1);
     expect(billing.cancel).toHaveBeenCalledWith(ctx);
   });

@@ -18,7 +18,6 @@ import { webhookSignatureInvalid } from '../common/errors/error-envelope';
 import { BillingService } from './billing.service';
 import { MoyasarClient } from './moyasar.client';
 import { MoyasarWebhookEvent } from './billing.types';
-import { CancelDto } from './dto/cancel.dto';
 import { SubscribeDto } from './dto/subscribe.dto';
 import { verifyWebhookToken } from './webhook-signature';
 
@@ -64,7 +63,7 @@ export class BillingController {
   @Post('cancel')
   @UseGuards(JwtAuthGuard, TenantGuard)
   @HttpCode(200)
-  async cancel(@CurrentTenant() ctx: TenantContext, @Body() _dto: CancelDto) {
+  async cancel(@CurrentTenant() ctx: TenantContext) {
     return this.billing.cancel(ctx);
   }
 
