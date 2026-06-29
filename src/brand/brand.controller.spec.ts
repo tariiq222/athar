@@ -3,8 +3,17 @@ import { NotFoundException } from '@nestjs/common';
 import { BrandController } from './brand.controller';
 import { OnboardingService } from './onboarding.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { TokenService } from '../auth/token.service';
+import { JwtAuthGuard } from '../tenant/jwt-auth.guard';
+import { TenantGuard } from '../tenant/tenant.guard';
 
 const tenant = { tenantId: 't1', userId: 'u1' };
+
+// Env vars for AuthModule's TokenService.
+process.env.JWT_ACCESS_SECRET ||= 'test-access-secret';
+process.env.JWT_REFRESH_SECRET ||= 'test-refresh-secret';
+process.env.JWT_ACCESS_TTL ||= '15m';
+process.env.JWT_REFRESH_TTL ||= '7d';
 
 function makeMocks() {
   const service = {
@@ -24,6 +33,9 @@ async function buildController(service: any, prisma: any) {
     providers: [
       { provide: OnboardingService, useValue: service },
       { provide: PrismaService, useValue: prisma },
+      { provide: TokenService, useValue: { issueTokens: jest.fn(), verifyAccess: jest.fn(), verifyRefresh: jest.fn() } as any },
+      { provide: JwtAuthGuard, useValue: { canActivate: () => true } },
+      { provide: TenantGuard, useValue: { canActivate: () => true } },
     ],
   }).compile();
   return moduleRef.get(BrandController);
