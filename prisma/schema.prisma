@@ -97,6 +97,7 @@ model Post {
   text           String
   hashtags       String[]
   scheduledAt    DateTime?
+  publishedAt    DateTime? // Phase 5 — set by mark-published; null until then
   createdAt      DateTime   @default(now())
   quotaStatus    String     @default("ok") // 'ok' | 'skipped_quota'
   originalText   String? // first generated text, kept for the learning diff
@@ -198,4 +199,33 @@ model SaudiOccasion {
   @@unique([tenantId, slug, gregorianYear])
   @@index([tenantId, startDate, endDate])
   @@index([gregorianYear])
+}
+// Phase 5 — assisted manual publishing. Added by a NEW migration.
+
+model Reminder {
+  id        String   @id @default(cuid())
+  tenantId  String
+  postId    String
+  channel   String // NotificationChannelId: 'in_app' | 'email'
+  remindAt  DateTime
+  status    String   @default("scheduled") // 'scheduled' | 'sent' | 'failed' | 'cancelled'
+  jobId     String? // BullMQ job id for dequeue on cancel
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([postId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  tenantId  String
+  userId    String?
+  type      String // NotificationType: 'reminder'
+  title     String
+  body      String
+  postId    String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId])
 }
