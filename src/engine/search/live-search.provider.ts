@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { SearchProvider, FetchInput, FetchResult } from '../providers/search-provider.interface';
 import type { FactSet, Fact, BrandProfileInput } from '../types';
+import { EngineError } from '../types';
 import { SourceFetcher } from './source-fetcher';
 import { FactExtractor } from './fact-extractor';
 import { UsageRecorder } from '../usage/usage.recorder';
@@ -31,6 +32,12 @@ export class LiveSearchProvider implements SearchProvider {
   ) {}
 
   async research(topic: string, brand: BrandProfileInput): Promise<FactSet> {
+    const plan = await this.usage.getCurrentPlan(brand.tenantId);
+    const decision = await this.usage.canConsume(brand.tenantId, 'search', plan);
+    if (!decision.allowed) {
+      throw new EngineError(decision.reason ?? 'search quota exceeded', 'skipped_quota');
+    }
+
     const whitelist = buildWhitelist(brand);
     const maxFetches = Number(process.env.ENGINE_SEARCH_MAX_FETCHES ?? 5);
 
