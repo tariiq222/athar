@@ -1,4 +1,3 @@
-import { timingSafeEqual } from 'crypto';
 import { verifyWebhookToken } from './webhook-signature';
 
 describe('verifyWebhookToken', () => {
