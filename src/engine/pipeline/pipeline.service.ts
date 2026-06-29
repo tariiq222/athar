@@ -19,7 +19,8 @@ import { UsageRecorder } from '../usage/usage.recorder';
  * single GenerationRequest.
  *
  * Error-table enforcement:
- *   - pre-flight quota check yields skipped_quota (no provider work)
+ *   - per-kind pre-flight quota checks (text → search → image) yield
+ *     `skipped_quota` so MonthPlanProcessor can mark and skip (no retry)
  *   - image provider_error degrades to a text-only post (image=null)
  *   - assemble PlatformLimitExceeded triggers ONE re-draft with a
  *     tighter brief before giving up
@@ -41,17 +42,26 @@ export class PipelineService {
   ): Promise<PipelineResult> {
     const { brandProfile: brand, platform, contentType } = req;
 
-    if (await this.usage.isOverQuota(brand.tenantId)) {
-      throw new EngineError('usage cap reached', 'skipped_quota');
+    // Per-kind pre-check: search runs implicitly through research() below;
+    // text and image get their own check here.
+    const plan = await this.usage.getCurrentPlan(brand.tenantId);
+    const textDecision = await this.usage.canConsume(brand.tenantId, 'text', plan);
+    if (!textDecision.allowed) {
+      throw new EngineError(textDecision.reason ?? 'text quota exceeded', 'skipped_quota');
     }
 
     const topic = req.topic ?? brand.topics[0] ?? '';
-    const factSet = await this.search.research(topic, brand);
+    const factSet = await this.search.research(topic, brand); // also pre-checks 'search'
 
     const baseInput: DraftInput = { factSet, brand, platform, contentType, brief: req.brief };
     let draft: Draft = await this.draftStage.run(baseInput);
     const critiqued = await this.critiqueStage.run(draft, baseInput);
     draft = critiqued.draft;
+
+    const imageDecision = await this.usage.canConsume(brand.tenantId, 'image', plan);
+    if (!imageDecision.allowed) {
+      throw new EngineError(imageDecision.reason ?? 'image quota exceeded', 'skipped_quota');
+    }
 
     let image: ImageAsset | null = null;
     try {

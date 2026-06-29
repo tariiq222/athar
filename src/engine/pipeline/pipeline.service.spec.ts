@@ -2,6 +2,7 @@ import { PipelineService } from './pipeline.service';
 import { PlatformLimitExceeded } from '../assemble/assemble.stage';
 import { EngineError } from '../types';
 import type { GenerationRequest } from '../types';
+import { BUSINESS_PLAN } from '../../config/billing-plans';
 
 const req: GenerationRequest = {
   brandProfile: {
@@ -37,7 +38,12 @@ function deps(over: Record<string, any> = {}) {
       }),
     },
     assembleStage: { run: jest.fn().mockResolvedValue('post-1') },
-    usage: { isOverQuota: jest.fn().mockResolvedValue(false), record: jest.fn() },
+    usage: {
+      record: jest.fn(),
+      isOverQuota: jest.fn().mockResolvedValue(false),
+      getCurrentPlan: jest.fn().mockResolvedValue(BUSINESS_PLAN),
+      canConsume: jest.fn().mockResolvedValue({ allowed: true, used: 0, cap: 60 }),
+    },
     ...over,
   };
 }
@@ -64,14 +70,52 @@ describe('PipelineService', () => {
     expect(d.imageProvider.setTenant).toHaveBeenCalledWith('tn');
   });
 
-  it('throws skipped_quota EngineError when over quota, with no provider work', async () => {
+  it('checks canConsume for text + image and throws skipped_quota on text denial', async () => {
+    const canConsume = jest
+      .fn()
+      .mockResolvedValueOnce({ allowed: false, used: 60, cap: 60, reason: 'text cap hit' });
     const d = deps({
-      usage: { isOverQuota: jest.fn().mockResolvedValue(true), record: jest.fn() },
+      usage: {
+        record: jest.fn(),
+        isOverQuota: jest.fn().mockResolvedValue(false),
+        getCurrentPlan: jest.fn().mockResolvedValue(BUSINESS_PLAN),
+        canConsume,
+      },
     });
     await expect(make(d).generateOne(req)).rejects.toMatchObject({
       kind: 'skipped_quota',
+      message: 'text cap hit',
     });
     expect(d.search.research).not.toHaveBeenCalled();
+    expect(canConsume).toHaveBeenCalledWith('tn', 'text', BUSINESS_PLAN);
+  });
+
+  it('checks canConsume for image after critique and throws skipped_quota on image denial', async () => {
+    const canConsume = jest
+      .fn()
+      .mockResolvedValueOnce({ allowed: true, used: 0, cap: 60 })
+      .mockResolvedValueOnce({ allowed: false, used: 30, cap: 30, reason: 'image cap hit' });
+    const d = deps({
+      usage: {
+        record: jest.fn(),
+        isOverQuota: jest.fn().mockResolvedValue(false),
+        getCurrentPlan: jest.fn().mockResolvedValue(BUSINESS_PLAN),
+        canConsume,
+      },
+    });
+    await expect(make(d).generateOne(req)).rejects.toMatchObject({
+      kind: 'skipped_quota',
+      message: 'image cap hit',
+    });
+    expect(canConsume).toHaveBeenCalledWith('tn', 'text', BUSINESS_PLAN);
+    expect(canConsume).toHaveBeenCalledWith('tn', 'image', BUSINESS_PLAN);
+    // Image check fires AFTER upstream stages, so they must have run.
+    expect(d.search.research).toHaveBeenCalledTimes(1);
+    expect(d.draftStage.run).toHaveBeenCalledTimes(1);
+    expect(d.critiqueStage.run).toHaveBeenCalledTimes(1);
+    // ...and image generation must be the thing that did NOT run.
+    expect(d.imageProvider.setTenant).not.toHaveBeenCalled();
+    expect(d.imageProvider.generateImage).not.toHaveBeenCalled();
   });
 
   it('degrades to text-only post when image generation fails with provider_error', async () => {

@@ -37,6 +37,7 @@ model Tenant {
   brandProfiles BrandProfile[]
   subscriptions Subscription[]
   usageRecords  UsageRecord[]
+  invoices      Invoice[]
 }
 
 model User {
@@ -147,6 +148,7 @@ model Subscription {
 
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
   usageRecords UsageRecord[]
+  invoices     Invoice[]
 
   @@index([tenantId])
 }
@@ -227,5 +229,26 @@ model Notification {
   readAt    DateTime?
   createdAt DateTime  @default(now())
 
+  @@index([tenantId])
+}
+
+// Phase 6 — billing (FR-15). Added by a NEW migration.
+model Invoice {
+  id               String   @id @default(cuid())
+  tenantId         String
+  subscriptionId   String
+  moyasarPaymentId String   @unique
+  number           String
+  issuedAt         DateTime @default(now())
+  totalMinor       Int
+  currency         String   @default("SAR")
+  sellerName       String
+  buyerName        String
+  status           String   @default("issued") // 'issued' | 'refunded'
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@unique([tenantId, number])
   @@index([tenantId])
 }

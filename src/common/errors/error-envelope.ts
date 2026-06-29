@@ -108,6 +108,27 @@ export const ERRORS = {
     error: 'REMINDER_ALREADY_SENT',
     message: 'لا يمكن إلغاء تذكير تم إرساله.',
   },
+  // Phase 6 — billing (FR-15)
+  QUOTA_EXCEEDED: {
+    statusCode: 402,
+    error: 'QUOTA_EXCEEDED',
+    message: 'تجاوزت سقف الباقة.',
+  },
+  PAYMENT_FAILED: {
+    statusCode: 402,
+    error: 'PAYMENT_FAILED',
+    message: 'فشلت عملية الدفع.',
+  },
+  WEBHOOK_SIGNATURE_INVALID: {
+    statusCode: 401,
+    error: 'WEBHOOK_SIGNATURE_INVALID',
+    message: 'توقيع الـwebhook غير صالح.',
+  },
+  INVOICE_NOT_FOUND: {
+    statusCode: 404,
+    error: 'INVOICE_NOT_FOUND',
+    message: 'الفاتورة غير موجودة.',
+  },
 } as const satisfies Record<string, ErrorEnvelope>;
 
 export class AppError extends HttpException {
@@ -168,3 +189,22 @@ export const invalidStatusTransition = (currentStatus: string) =>
 export const remindAtRequired = () => make(ERRORS.REMIND_AT_REQUIRED);
 export const remindAtInPast = () => make(ERRORS.REMIND_AT_IN_PAST);
 export const reminderAlreadySent = () => make(ERRORS.REMINDER_ALREADY_SENT);
+
+// Phase 6 — billing error helpers
+export const quotaExceeded = (kind: string, used: number, cap: number) =>
+  new AppError(
+    402,
+    'QUOTA_EXCEEDED',
+    `بلغت سقف الباقة الشهري (${used}/${cap}) لـ${kindLabel(kind)}.`,
+  );
+
+export const paymentFailed = (reason: string) =>
+  new AppError(402, 'PAYMENT_FAILED', `فشلت عملية الدفع: ${reason}.`);
+
+export const webhookSignatureInvalid = () => make(ERRORS.WEBHOOK_SIGNATURE_INVALID);
+
+export const invoiceNotFound = () => make(ERRORS.INVOICE_NOT_FOUND);
+
+function kindLabel(kind: string): string {
+  return { text: 'المسودّات', image: 'الصور', search: 'عمليات البحث' }[kind] ?? kind;
+}

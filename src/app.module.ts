@@ -15,6 +15,7 @@ import { OccasionModule } from './occasions/occasion.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { NotificationModule } from './notifications/notifications.module';
 import { PublishingModule } from './publishing/publishing.module';
+import { BillingModule } from './billing/billing.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { buildValidationPipe } from './common/dto-validation';
 
@@ -40,6 +41,7 @@ import { buildValidationPipe } from './common/dto-validation';
     CalendarModule,
     NotificationModule,
     PublishingModule,
+    BillingModule,
   ],
   providers: [
     { provide: APP_PIPE, useFactory: buildValidationPipe },

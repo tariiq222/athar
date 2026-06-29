@@ -7,14 +7,18 @@ import {
   exceedsPlatformLimit,
   invalidStatusTransition,
   invalidTransition,
+  invoiceNotFound,
   notApproved,
   notFound,
+  paymentFailed,
   publishNotAllowedHere,
+  quotaExceeded,
   rangeTooWide,
   remindAtInPast,
   remindAtRequired,
   reminderAlreadySent,
   validationFailed,
+  webhookSignatureInvalid,
 } from './error-envelope';
 
 describe('error-envelope', () => {
@@ -38,9 +42,12 @@ describe('error-envelope', () => {
         'INVALID_REFRESH_TOKEN',
         'INVALID_STATUS_TRANSITION',
         'INVALID_TRANSITION',
+        'INVOICE_NOT_FOUND',
         'NOT_APPROVED',
         'NOT_FOUND',
+        'PAYMENT_FAILED',
         'PUBLISH_NOT_ALLOWED_HERE',
+        'QUOTA_EXCEEDED',
         'RANGE_TOO_WIDE',
         'REMIND_AT_IN_PAST',
         'REMIND_AT_REQUIRED',
@@ -49,6 +56,7 @@ describe('error-envelope', () => {
         'UNAUTHENTICATED',
         'VALIDATION_ERROR',
         'VALIDATION_FAILED',
+        'WEBHOOK_SIGNATURE_INVALID',
       ].sort(),
     );
   });
@@ -170,6 +178,28 @@ describe('error-envelope', () => {
       const ex = reminderAlreadySent();
       expect(ex.getStatus()).toBe(409);
       expect(ex.getEnvelope()).toEqual(ERRORS.REMINDER_ALREADY_SENT);
+    });
+  });
+
+  describe('Phase 6 billing error codes', () => {
+    it('quotaExceeded returns Arabic reason and 402', () => {
+      const e = quotaExceeded('text', 60, 60);
+      expect(e.getStatus()).toBe(402);
+      expect(e.getEnvelope().error).toBe('QUOTA_EXCEEDED');
+      expect(e.getEnvelope().message).toContain('المسودّات');
+      expect(e.getEnvelope().message).toContain('60');
+    });
+
+    it('paymentFailed returns 402', () => {
+      expect(paymentFailed('declined').getStatus()).toBe(402);
+    });
+
+    it('webhookSignatureInvalid returns 401', () => {
+      expect(webhookSignatureInvalid().getStatus()).toBe(401);
+    });
+
+    it('invoiceNotFound returns 404', () => {
+      expect(invoiceNotFound().getStatus()).toBe(404);
     });
   });
 });

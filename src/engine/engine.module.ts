@@ -77,6 +77,7 @@ const candidateUrlProvider: CandidateUrlProvider = async (topic, whitelist) =>
     PipelineService,
     MonthPlanService,
     LearningService,
+    UsageRecorder,
     // Seam tokens exported so BrandModule (and future consumers) can resolve
     // them through EngineModule's real-provider bindings.
     'ContentProvider',
