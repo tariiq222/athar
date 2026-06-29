@@ -109,6 +109,12 @@ describe('PipelineService', () => {
     });
     expect(canConsume).toHaveBeenCalledWith('tn', 'text', BUSINESS_PLAN);
     expect(canConsume).toHaveBeenCalledWith('tn', 'image', BUSINESS_PLAN);
+    // Image check fires AFTER upstream stages, so they must have run.
+    expect(d.search.research).toHaveBeenCalledTimes(1);
+    expect(d.draftStage.run).toHaveBeenCalledTimes(1);
+    expect(d.critiqueStage.run).toHaveBeenCalledTimes(1);
+    // ...and image generation must be the thing that did NOT run.
+    expect(d.imageProvider.setTenant).not.toHaveBeenCalled();
     expect(d.imageProvider.generateImage).not.toHaveBeenCalled();
   });
 
