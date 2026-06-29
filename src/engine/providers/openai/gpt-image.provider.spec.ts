@@ -79,7 +79,8 @@ describe('GptImageProvider', () => {
     jest.doMock('../../image/image-gate.config', () => ({
       IMAGE_GATE_DECISION: { primaryMethod: 'overlay', gptImageMaxAttempts: 0 },
     }));
-    const { GptImageProvider: OverlayPrimary } = require('./gpt-image.provider');
+    const mod = await import('./gpt-image.provider');
+    const OverlayPrimary = mod.GptImageProvider;
     const d = deps();
     const p = new OverlayPrimary(
       d.imageClient as any,

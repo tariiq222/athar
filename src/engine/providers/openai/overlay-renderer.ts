@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import satori from 'satori';
 import sharp from 'sharp';
 import type { BrandKit } from '../../types';
@@ -20,7 +20,7 @@ const defaultFontLoader: FontLoader = async () => {
  */
 @Injectable()
 export class OverlayRenderer {
-  constructor(private readonly fontLoader: FontLoader = defaultFontLoader) {}
+  constructor(@Optional() private readonly fontLoader: FontLoader = defaultFontLoader) {}
 
   async render(
     background: Buffer,

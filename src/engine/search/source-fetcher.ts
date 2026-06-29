@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { isDomainAllowed } from '../../config/trusted-sources';
 
 export type HttpGet = (url: string) => Promise<string>;
@@ -23,7 +23,7 @@ const defaultHttpGet: HttpGet = async (url) => {
  */
 @Injectable()
 export class SourceFetcher {
-  constructor(private readonly httpGet: HttpGet = defaultHttpGet) {}
+  constructor(@Optional() private readonly httpGet: HttpGet = defaultHttpGet) {}
 
   async fetchPage(url: string, whitelist: string[]): Promise<FetchedPage | null> {
     if (!isDomainAllowed(url, whitelist)) return null;
