@@ -83,9 +83,11 @@ log "${YEL}▸ merging $BRANCH into main (--no-ff)${NC}"
 COMMIT_COUNT=$(git log --oneline "main..$BRANCH" | wc -l | tr -d ' ')
 COMMIT_TITLES=$(git log --pretty=format:"- %s" "main..$BRANCH" | head -20)
 MILESTONE_ID=$(echo "$BRANCH" | grep -oE 'm[0-9.]+' | head -1 || echo "milestone")
+# Uppercase via tr — macOS ships bash 3.2, which lacks ${var^^} (bash 4+).
+MILESTONE_UP=$(printf '%s' "$MILESTONE_ID" | tr '[:lower:]' '[:upper:]')
 if ! git merge --no-ff "$BRANCH" -m "Merge branch '$BRANCH' into main
 
-Phase 7 ${MILESTONE_ID^^}: $COMMIT_COUNT commits.
+Phase 7 ${MILESTONE_UP}: $COMMIT_COUNT commits.
 
 $COMMIT_TITLES" 2>&1; then
   die "merge conflict — resolve manually then run remaining steps yourself"
