@@ -1072,17 +1072,15 @@ E2E_BOOTSTRAP=1 npx jest test/e2e --no-coverage 2>&1 | tail -5
 ```
 Expected: clean. The full e2e suite may include pre-existing failures from non-auth suites; only concern yourself with auth-me + csrf + origin.
 
-- [ ] **Step 7.2: Append `phase7-m1-status` blockers-resolved note to memory**
+- [x] **Step 7.2: Append `phase7-m1-status` blockers-resolved note to memory**
 
 Edit `/Users/tariq/.claude/projects/-Users-tariq-code----/memory/phase7-m1-status.md` and remove (or strikethrough) the "Backend dependencies still pending" section. Add a one-line note: "Resolved by auth-session-hardening branch tariq/2026-06-30-auth-session-hardening (M1 T1.7+ now unblocked)."
 
-- [ ] **Step 7.3: Merge via the project's reusable pipeline**
+- [x] **Step 7.3: Merge via the project's reusable pipeline**
 
-```bash
-git switch tariq/2026-06-30-auth-session-hardening
-scripts/merge-milestone.sh tariq/2026-06-30-auth-session-hardening --push
-```
-Expected: 9-step pipeline runs, prints summary, local branch deleted.
+Merged manually as `--no-ff` (merge commit `9255bbb`) because `merge-milestone.sh` hit a
+`bad substitution` on `${MILESTONE_ID^^}` (bash 4+ syntax, macOS ships bash 3.2). Post-merge
+checks on main: typecheck clean, 558 tests pass. Local branch deleted. Push to origin pending.
 
 ---
 
