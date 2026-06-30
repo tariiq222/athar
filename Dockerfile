@@ -20,5 +20,17 @@ COPY --from=build --chown=node:node /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/package.json ./
 USER node
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:3000/health/live || exit 1
+# Healthcheck hits /api/v1/health/ready (the readiness endpoint, which
+# pings Postgres + Redis with a 1s timeout each via Terminus). We moved
+# away from /health/live because main.ts sets a global prefix of `api/v1`,
+# so /health/live no longer resolves — it 404s. /health/ready is the
+# semantically correct choice too: liveness should fail ONLY when the
+# process itself is wedged (restartable), while readiness fails when a
+# downstream dep is down — the orchestrator should pull the container out
+# of rotation, NOT restart it. Restarting on a transient DB blip causes
+# restart loops; pulling out of rotation does not. The /api/v1 prefix is
+# required because the controller is NOT excluded from setGlobalPrefix
+# (adding an exclude would change the public route shape — out of scope
+# for this task).
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:3000/api/v1/health/ready || exit 1
 CMD ["node", "dist/main.js"]
