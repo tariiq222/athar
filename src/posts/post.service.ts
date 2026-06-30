@@ -3,14 +3,15 @@ import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppError, publishNotAllowedHere } from '../common/errors/error-envelope';
 import { PostStateMachine, PostStatusTransition } from './post-state-machine';
-import {
-  PostCitation,
-  PostDetail,
-  PostImage,
-  PostListItem,
-  PostPlatform,
-} from './post.types';
+import { PostCitation, PostDetail, PostImage, PostListItem, PostPlatform } from './post.types';
 import type { PostStatus } from '../generated/prisma/enums';
+
+type PostWithRelations = Prisma.PostGetPayload<{
+  include: { image: true; citations: true };
+}>;
+type PostWithCitationCount = Prisma.PostGetPayload<{
+  include: { image: true; _count: { select: { citations: true } } };
+}>;
 
 export interface ListPostsParams {
   status?: PostStatus;
@@ -68,10 +69,7 @@ export class PostService {
       this.prisma.post.findMany({
         where,
         include: { image: true, _count: { select: { citations: true } } },
-        orderBy: [
-          { scheduledAt: { sort: 'asc', nulls: 'last' } },
-          { createdAt: 'desc' },
-        ],
+        orderBy: [{ scheduledAt: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -79,7 +77,7 @@ export class PostService {
     ]);
 
     return {
-      items: rows.map((r: any) => this.toListItem(r)),
+      items: rows.map((r) => this.toListItem(r)),
       page,
       pageSize,
       total,
@@ -155,11 +153,11 @@ export class PostService {
     });
   }
 
-  private toDetail(row: any): PostDetail {
+  private toDetail(row: PostWithRelations): PostDetail {
     const image: PostImage | null = row.image
       ? { url: row.image.url, method: row.image.method }
       : null;
-    const citations: PostCitation[] = (row.citations ?? []).map((c: any) => ({
+    const citations: PostCitation[] = (row.citations ?? []).map((c) => ({
       claim: c.claim,
       sourceUrl: c.sourceUrl,
     }));
@@ -178,7 +176,7 @@ export class PostService {
     };
   }
 
-  private toListItem(row: any): PostListItem {
+  private toListItem(row: PostWithCitationCount): PostListItem {
     return {
       id: row.id,
       platform: row.platform as PostPlatform,

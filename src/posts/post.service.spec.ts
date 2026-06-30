@@ -365,7 +365,15 @@ describe('PostService.patch', () => {
   // ── state transition — invalid ────────────────────────────────────────────
 
   it('rejects transition whose from does not match current status with INVALID_TRANSITION (409)', async () => {
-    const existing = { id: 'p1', tenantId: 't1', status: 'draft', text: 'x', hashtags: [], image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      status: 'draft',
+      text: 'x',
+      hashtags: [],
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -381,7 +389,15 @@ describe('PostService.patch', () => {
   });
 
   it('rejects any transition.to === "published" with PUBLISH_NOT_ALLOWED_HERE (only Phase 5 publishes)', async () => {
-    const existing = { id: 'p1', tenantId: 't1', status: 'approved', text: 'x', hashtags: [], image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      status: 'approved',
+      text: 'x',
+      hashtags: [],
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -398,7 +414,15 @@ describe('PostService.patch', () => {
   });
 
   it('rejects draft → approved (undefined transition) as INVALID_TRANSITION', async () => {
-    const existing = { id: 'p1', tenantId: 't1', status: 'draft', text: 'x', hashtags: [], image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      status: 'draft',
+      text: 'x',
+      hashtags: [],
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -416,7 +440,15 @@ describe('PostService.patch', () => {
   // ── CONTENT_LOCKED ────────────────────────────────────────────────────────
 
   it('rejects content edit on an approved post with CONTENT_LOCKED (409)', async () => {
-    const existing = { id: 'p1', tenantId: 't1', status: 'approved', text: 'x', hashtags: [], image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      status: 'approved',
+      text: 'x',
+      hashtags: [],
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -426,13 +458,21 @@ describe('PostService.patch', () => {
     }).compile();
     const svc = moduleRef.get(PostService);
 
-    await expect(
-      svc.patch('t1', 'p1', { text: 'changed' }),
-    ).rejects.toMatchObject({ code: 'CONTENT_LOCKED' });
+    await expect(svc.patch('t1', 'p1', { text: 'changed' })).rejects.toMatchObject({
+      code: 'CONTENT_LOCKED',
+    });
   });
 
   it('rejects hashtag edit on approved post with CONTENT_LOCKED', async () => {
-    const existing = { id: 'p1', tenantId: 't1', status: 'approved', text: 'x', hashtags: ['#a'], image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      status: 'approved',
+      text: 'x',
+      hashtags: ['#a'],
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -442,13 +482,21 @@ describe('PostService.patch', () => {
     }).compile();
     const svc = moduleRef.get(PostService);
 
-    await expect(
-      svc.patch('t1', 'p1', { hashtags: ['#b'] }),
-    ).rejects.toMatchObject({ code: 'CONTENT_LOCKED' });
+    await expect(svc.patch('t1', 'p1', { hashtags: ['#b'] })).rejects.toMatchObject({
+      code: 'CONTENT_LOCKED',
+    });
   });
 
   it('rejects image edit on approved post with CONTENT_LOCKED', async () => {
-    const existing = { id: 'p1', tenantId: 't1', status: 'approved', text: 'x', hashtags: [], image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      status: 'approved',
+      text: 'x',
+      hashtags: [],
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -464,7 +512,15 @@ describe('PostService.patch', () => {
   });
 
   it('rejects image_null=true on approved post with CONTENT_LOCKED', async () => {
-    const existing = { id: 'p1', tenantId: 't1', status: 'approved', text: 'x', hashtags: [], image: { url: 'u', method: 'm' }, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      status: 'approved',
+      text: 'x',
+      hashtags: [],
+      image: { url: 'u', method: 'm' },
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -474,16 +530,24 @@ describe('PostService.patch', () => {
     }).compile();
     const svc = moduleRef.get(PostService);
 
-    await expect(
-      svc.patch('t1', 'p1', { image_null: true }),
-    ).rejects.toMatchObject({ code: 'CONTENT_LOCKED' });
+    await expect(svc.patch('t1', 'p1', { image_null: true })).rejects.toMatchObject({
+      code: 'CONTENT_LOCKED',
+    });
   });
 
   it('allows scheduledAt change on approved post (not a content edit)', async () => {
     const existing = {
-      id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x',
-      status: 'approved', text: 'x', hashtags: [], scheduledAt: null,
-      createdAt: new Date('2026-09-23'), image: null, citations: [],
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'approved',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
     };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
@@ -503,7 +567,19 @@ describe('PostService.patch', () => {
   // ── allowed state transitions ──────────────────────────────────────────────
 
   it('applies an allowed transition (draft → pending_review) and updates the status', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'draft', text: 'x', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const final = { ...existing, status: 'pending_review' };
     const tx = makeTxMock({ existing, final });
     const moduleRef = await Test.createTestingModule({
@@ -514,7 +590,9 @@ describe('PostService.patch', () => {
     }).compile();
     const svc = moduleRef.get(PostService);
 
-    const res = await svc.patch('t1', 'p1', { transition: { from: 'draft', to: 'pending_review' } });
+    const res = await svc.patch('t1', 'p1', {
+      transition: { from: 'draft', to: 'pending_review' },
+    });
     expect(res.status).toBe('pending_review');
     expect(tx.post.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -525,7 +603,19 @@ describe('PostService.patch', () => {
   });
 
   it('applies pending_review → approved transition', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'pending_review', text: 'x', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'pending_review',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const final = { ...existing, status: 'approved' };
     const tx = makeTxMock({ existing, final });
     const moduleRef = await Test.createTestingModule({
@@ -536,12 +626,26 @@ describe('PostService.patch', () => {
     }).compile();
     const svc = moduleRef.get(PostService);
 
-    const res = await svc.patch('t1', 'p1', { transition: { from: 'pending_review', to: 'approved' } });
+    const res = await svc.patch('t1', 'p1', {
+      transition: { from: 'pending_review', to: 'approved' },
+    });
     expect(res.status).toBe('approved');
   });
 
   it('applies approved → pending_review pull-back transition', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'approved', text: 'x', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'approved',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const final = { ...existing, status: 'pending_review' };
     const tx = makeTxMock({ existing, final });
     const moduleRef = await Test.createTestingModule({
@@ -552,12 +656,26 @@ describe('PostService.patch', () => {
     }).compile();
     const svc = moduleRef.get(PostService);
 
-    const res = await svc.patch('t1', 'p1', { transition: { from: 'approved', to: 'pending_review' } });
+    const res = await svc.patch('t1', 'p1', {
+      transition: { from: 'approved', to: 'pending_review' },
+    });
     expect(res.status).toBe('pending_review');
   });
 
   it('applies pending_review → draft reopen transition', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'pending_review', text: 'x', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'pending_review',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const final = { ...existing, status: 'draft' };
     const tx = makeTxMock({ existing, final });
     const moduleRef = await Test.createTestingModule({
@@ -568,14 +686,28 @@ describe('PostService.patch', () => {
     }).compile();
     const svc = moduleRef.get(PostService);
 
-    const res = await svc.patch('t1', 'p1', { transition: { from: 'pending_review', to: 'draft' } });
+    const res = await svc.patch('t1', 'p1', {
+      transition: { from: 'pending_review', to: 'draft' },
+    });
     expect(res.status).toBe('draft');
   });
 
   // ── content edits ──────────────────────────────────────────────────────────
 
   it('updates text on a draft post', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'draft', text: 'old', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'old',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: { ...existing, text: 'new text' } });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -594,7 +726,19 @@ describe('PostService.patch', () => {
   });
 
   it('updates hashtags on a draft post', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'draft', text: 'x', hashtags: ['#old'], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'x',
+      hashtags: ['#old'],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: { ...existing, hashtags: ['#new'] } });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -613,7 +757,19 @@ describe('PostService.patch', () => {
   });
 
   it('sets scheduledAt on a draft post', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'draft', text: 'x', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -632,7 +788,19 @@ describe('PostService.patch', () => {
   });
 
   it('clears scheduledAt when scheduledAt_null=true', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'draft', text: 'x', hashtags: [], scheduledAt: new Date('2026-10-01'), createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: new Date('2026-10-01'),
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: { ...existing, scheduledAt: null } });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -651,7 +819,19 @@ describe('PostService.patch', () => {
   });
 
   it('allows text edit on pending_review post (not locked)', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'pending_review', text: 'old', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'pending_review',
+      text: 'old',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: { ...existing, text: 'edited' } });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -668,7 +848,19 @@ describe('PostService.patch', () => {
   // ── image upsert / delete ─────────────────────────────────────────────────
 
   it('upserts the image when dto.image is provided', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'draft', text: 'x', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -688,7 +880,19 @@ describe('PostService.patch', () => {
   });
 
   it('deletes the image when image_null is true', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'draft', text: 'x', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: { url: 'u', method: 'm' }, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: { url: 'u', method: 'm' },
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: { ...existing, image: null } });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -703,7 +907,19 @@ describe('PostService.patch', () => {
   });
 
   it('does not call imageAsset.upsert or deleteMany when neither image nor image_null is set', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'draft', text: 'x', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -721,7 +937,19 @@ describe('PostService.patch', () => {
   // ── final re-read and PostDetail mapping ──────────────────────────────────
 
   it('returns the final state from the re-read post including image and citations', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'draft', text: 'x', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const final = {
       ...existing,
       text: 'updated',
@@ -744,7 +972,19 @@ describe('PostService.patch', () => {
 
   it('maps scheduledAt ISO string when present in the final post', async () => {
     const scheduledDate = new Date('2026-10-15T08:00:00.000Z');
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'draft', text: 'x', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const final = { ...existing, scheduledAt: scheduledDate };
     const tx = makeTxMock({ existing, final });
     const moduleRef = await Test.createTestingModule({
@@ -760,7 +1000,19 @@ describe('PostService.patch', () => {
   });
 
   it('maps null image to null in the returned PostDetail', async () => {
-    const existing = { id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x', status: 'draft', text: 'x', hashtags: [], scheduledAt: null, createdAt: new Date('2026-09-23'), image: null, citations: [] };
+    const existing = {
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'x',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: new Date('2026-09-23'),
+      image: null,
+      citations: [],
+    };
     const tx = makeTxMock({ existing, final: existing });
     const moduleRef = await Test.createTestingModule({
       providers: [
