@@ -27,7 +27,13 @@ export class ReminderProcessor extends WorkerHost {
   async process(job: Job<ReminderJobData>): Promise<void> {
     const { reminderId, postId, tenantId, channel } = job.data;
 
-    const reminder = await this.prisma.reminder.findUnique({ where: { id: reminderId } });
+    // Scope by tenantId so a job carrying another tenant's reminderId
+    // (forged/stale job data) cannot deliver a reminder that does not belong
+    // to it. findUnique only accepts unique fields, so use findFirst with the
+    // tenantId predicate; a cross-tenant id resolves to null and is dropped.
+    const reminder = await this.prisma.reminder.findFirst({
+      where: { id: reminderId, tenantId },
+    });
     // Idempotency: only a still-scheduled reminder is delivered (guards duplicate delivery).
     if (!reminder || reminder.status !== 'scheduled') return;
 

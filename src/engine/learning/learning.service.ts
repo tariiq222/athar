@@ -18,9 +18,13 @@ export class LearningService {
     private readonly usage: UsageRecorder,
   ) {}
 
-  async captureApproval(postId: string): Promise<void> {
-    const post = await this.prisma.post.findUniqueOrThrow({
-      where: { id: postId },
+  async captureApproval(tenantId: string, postId: string): Promise<void> {
+    // Scope by tenantId so a cross-tenant postId cannot leak another
+    // tenant's post text into this tenant's learning loop. findUniqueOrThrow
+    // only accepts unique fields in `where`, so use findFirstOrThrow to add
+    // the tenantId predicate while keeping throw-on-missing behavior.
+    const post = await this.prisma.post.findFirstOrThrow({
+      where: { id: postId, tenantId },
     });
     if (!post.originalText || post.originalText === post.text) return;
 
@@ -44,8 +48,8 @@ export class LearningService {
     const summary = res.text.trim();
     if (!summary) return;
 
-    const brand = await this.prisma.brandProfile.findUniqueOrThrow({
-      where: { id: post.brandProfileId },
+    const brand = await this.prisma.brandProfile.findFirstOrThrow({
+      where: { id: post.brandProfileId, tenantId },
     });
     const updated = brand.learnedPreferences
       ? `${brand.learnedPreferences}\n${summary}`
