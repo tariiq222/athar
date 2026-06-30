@@ -1,0 +1,70 @@
+:root {
+  /* Colors — OKLCH perceptual */
+  --color-primary-deep: oklch(28% 0.03 165);    /* #0F2E2A — أخضر داكن */
+  --color-primary:      oklch(48% 0.10 155);    /* #2E7D59 — أخضر رئيسي */
+  --color-surface:      oklch(94% 0.025 85);    /* #F2E8D5 — بيج/cream */
+  --color-accent:       oklch(72% 0.075 70);    /* #D4A373 — ذهبي ترابي */
+  --color-border:       oklch(92% 0.005 250);   /* #E6E8EB */
+  --color-heading:      oklch(28% 0.04 250);    /* #1E293B — كحلي */
+  --color-mint:         oklch(95% 0.025 155);   /* #E6F3EC */
+  --color-sage:         oklch(75% 0.05 155);    /* #A7C7B7 */
+  --color-muted:        oklch(50% 0.02 60);     /* #7A6F64 */
+  --color-elevated:     oklch(100% 0 0);        /* #FFFFFF — modals only */
+  --color-text:         var(--color-primary-deep);
+  --color-text-on-primary: var(--color-elevated);
+  --color-text-muted:   var(--color-muted);
+
+  /* Status colors — green/terracotta/navy-tinted */
+  --color-success:      var(--color-primary);
+  --color-warning:      var(--color-accent);
+  --color-error:        oklch(50% 0.15 25);      /* terracotta-tinted, AAA on cream */
+
+  /* Typography */
+  --font-display: 'TheYearofHandicrafts', 'IBM Plex Sans Arabic', serif;
+  --font-body:    'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-latin:   'Effra', system-ui, sans-serif;
+
+  --text-display:  2.5rem;        /* 40px */
+  --text-h2:       2rem;          /* 32px */
+  --text-h3:       1.5rem;        /* 24px */
+  --text-body-lg:  1.125rem;      /* 18px */
+  --text-body:     1rem;          /* 16px */
+  --text-sm:       0.875rem;      /* 14px */
+  --text-xs:       0.75rem;       /* 12px */
+
+  /* Spacing — 4pt scale */
+  --space-xs:   4px;
+  --space-sm:   8px;
+  --space-md:   12px;
+  --space-base: 16px;
+  --space-lg:   24px;
+  --space-xl:   32px;
+  --space-2xl:  48px;
+  --space-3xl:  64px;
+  --space-4xl:  96px;
+
+  /* Motion */
+  --motion-instant:      80ms;
+  --motion-quick:        160ms;
+  --motion-base:         240ms;
+  --motion-slow:         400ms;
+  --motion-orchestrated: 600ms;
+  --easing-expo:         cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Borders / focus */
+  --border-hairline: 1px;
+  --focus-ring: 2px solid var(--color-primary);
+  --focus-offset: 2px;
+
+  /* Layout */
+  --container-max: 1200px;
+  --touch-target:  44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    transform: none !important;
+  }
+}
