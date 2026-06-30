@@ -74,7 +74,7 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.23",
-    "@nestjs/testing": "^10.4.22",
+    "@nestjs/testing": "^11.1.27",
     "@types/cookie-parser": "^1.4.10",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.0.1",
