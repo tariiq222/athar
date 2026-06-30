@@ -86,13 +86,17 @@ jobs:
           --health-cmd "redis-cli ping" --health-interval 10s
           --health-timeout 5s --health-retries 5
       minio:
-        image: minio/minio
+        image: minio/minio:latest
         env:
           MINIO_ROOT_USER: athar
           MINIO_ROOT_PASSWORD: athar12345
         ports: ["9000:9000", "9001:9001"]
+        # MinIO image no longer auto-starts `server /data` on bare invocation
+        # in recent tags — pass the command explicitly so the container becomes
+        # healthy for downstream jobs. See Task 12.1 follow-up commit.
+        command: ["server", "/data", "--console-address", ":9001"]
         options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-cmd "curl -fsS http://localhost:9000/minio/health/live || exit 1"
           --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - name: Checkout
@@ -185,13 +189,17 @@ jobs:
           --health-cmd "redis-cli ping" --health-interval 10s
           --health-timeout 5s --health-retries 5
       minio:
-        image: minio/minio
+        image: minio/minio:latest
         env:
           MINIO_ROOT_USER: athar
           MINIO_ROOT_PASSWORD: athar12345
         ports: ["9000:9000", "9001:9001"]
+        # MinIO image no longer auto-starts `server /data` on bare invocation
+        # in recent tags — pass the command explicitly so the container becomes
+        # healthy for downstream jobs. See Task 12.1 follow-up commit.
+        command: ["server", "/data", "--console-address", ":9001"]
         options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-cmd "curl -fsS http://localhost:9000/minio/health/live || exit 1"
           --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - name: Checkout
