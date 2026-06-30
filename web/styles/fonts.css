@@ -1,0 +1,17 @@
+/* Display: TheYearofHandicrafts */
+@font-face {
+  font-family: 'TheYearofHandicrafts';
+  src: url('/_next/static/media/handicrafts/TheYearofHandicraftsTTF-Reg.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+/* …repeat for Med (500), SemiBold (600), Bold (700), Black (900) — wired via next/font/local in app/layout.tsx */
+
+/* Latin: Effra */
+@font-face {
+  font-family: 'Effra';
+  src: url('/_next/static/media/effra/Effra-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-display: swap;
+}
+/* …repeat for Med, SemiBold, Bold */
