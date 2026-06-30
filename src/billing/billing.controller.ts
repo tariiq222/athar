@@ -15,6 +15,8 @@ import { TenantGuard } from '../tenant/tenant.guard';
 import { CurrentTenant } from '../tenant/current-tenant.decorator';
 import { TenantContext } from '../tenant/tenant-context';
 import { webhookSignatureInvalid } from '../common/errors/error-envelope';
+import { TenantThrottlerGuard } from '../common/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { BillingService, TenantCtx } from './billing.service';
 import { MoyasarClient } from './moyasar.client';
 import { MoyasarWebhookEvent } from './billing.types';
@@ -52,6 +54,12 @@ export class BillingController {
   // creating a second invoice.
   @Post('webhook')
   @HttpCode(200)
+  // Sprint A — Task 10.1: tight per-second cap on the webhook. Moyasar can
+  // legitimately retry, so we DO NOT throttle aggressively (the 6th/sec
+  // is the abuse ceiling, not the retry ceiling). Tenant-scoped tracker
+  // so one noisy tenant can't choke webhook delivery for everyone else.
+  @UseGuards(TenantThrottlerGuard)
+  @Throttle({ short: { limit: 5, ttl: 1000 } })
   async webhook(
     @Req() req: RequestWithRawBody,
     @Body() body: MoyasarWebhookEvent,

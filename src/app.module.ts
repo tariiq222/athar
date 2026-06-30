@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
@@ -33,6 +34,15 @@ import { validateConfig } from './config/config-validation';
         port: Number(process.env.REDIS_PORT ?? 6379),
       },
     }),
+    // Sprint A — Task 10.1: throttler is NOT registered as a global APP_GUARD.
+    // Each route opts in via @Throttle + @UseGuards (auth uses default
+    // per-IP ThrottlerGuard; billing webhook uses TenantThrottlerGuard so
+    // bursts from a single tenant/IP don't poison other tenants). Task 13.1
+    // will revisit wiring.
+    ThrottlerModule.forRoot([
+      { name: 'short', ttl: 1000, limit: 3 },
+      { name: 'medium', ttl: 60_000, limit: 20 },
+    ]),
     PrismaModule,
     HealthModule,
     EngineModule,
