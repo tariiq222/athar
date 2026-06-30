@@ -1,5 +1,5 @@
-import { UnprocessableEntityException, ValidationError, ValidationPipe } from '@nestjs/common';
-import { validationErrorBody } from './errors/error-envelope';
+import { ValidationError, ValidationPipe } from '@nestjs/common';
+import { validationError } from './errors/error-envelope';
 
 /**
  * Sprint A — Task 9.1: this file owns the *factory* for the global
@@ -14,9 +14,7 @@ export function buildValidationPipe(): ValidationPipe {
     transform: true,
     exceptionFactory: (errors: ValidationError[]) => {
       const fields = errors.map((e) => e.property);
-      return new UnprocessableEntityException(
-        validationErrorBody('validation_error', 'بيانات غير صالحة', fields),
-      );
+      return validationError('validation_error', 'بيانات غير صالحة', fields);
     },
   });
 }

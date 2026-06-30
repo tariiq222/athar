@@ -4,6 +4,7 @@ export interface ErrorEnvelope {
   statusCode: number;
   error: string;
   message: string;
+  fields?: string[];
 }
 
 export const ERRORS = {
@@ -134,15 +135,18 @@ export const ERRORS = {
 export class AppError extends HttpException {
   readonly code: string;
   private readonly envelopeMessage: string;
+  private readonly envelopeFields?: string[];
 
   constructor(
     private readonly statusCode: number,
     errorCode: string,
     message: string,
+    fields?: string[],
   ) {
-    super({ statusCode, error: errorCode, message }, statusCode);
+    super({ statusCode, error: errorCode, message, fields }, statusCode);
     this.envelopeMessage = message;
     this.code = errorCode;
+    this.envelopeFields = fields;
   }
 
   getEnvelope(): ErrorEnvelope {
@@ -150,6 +154,9 @@ export class AppError extends HttpException {
       statusCode: this.statusCode,
       error: this.code,
       message: this.envelopeMessage,
+      ...(this.envelopeFields && this.envelopeFields.length > 0
+        ? { fields: this.envelopeFields }
+        : {}),
     };
   }
 }
@@ -226,25 +233,16 @@ function kindLabel(kind: string): string {
 }
 
 /**
- * Validation / business-rule error body shape — Sprint A Task 9.1.
+ * Sprint A post-launch: unified error envelope.
  *
- * Used as the `response` payload of `UnprocessableEntityException` /
- * `NotFoundException` throws from controllers and services that need to
- * surface field-level errors to the client. Distinct from the flat
- * `ErrorEnvelope` produced by the HTTP exception filter at the catch
- * site (which only carries `statusCode/error/message`).
- *
- * Lives here (not in `dto-validation.ts`) so the entire error envelope
- * vocabulary is owned by one file.
+ * Throw `validationError(code, message, fields)` (or any `AppError`) — the
+ * HTTP filter will translate it into the single flat envelope shape
+ * `{ statusCode, error, message, fields? }` that all clients should handle.
  */
-export interface ValidationErrorBody {
-  error: { code: string; message: string; fields: string[] };
-}
-
-export function validationErrorBody(
+export function validationError(
   code: string,
   message: string,
   fields: string[] = [],
-): ValidationErrorBody {
-  return { error: { code, message, fields } };
+): AppError {
+  return new AppError(422, code, message, fields);
 }

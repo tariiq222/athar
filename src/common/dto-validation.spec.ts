@@ -1,5 +1,6 @@
-import { UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { buildValidationPipe } from './dto-validation';
+import { AppError } from './errors/error-envelope';
 
 describe('dto-validation', () => {
   it('buildValidationPipe returns a ValidationPipe whose factory throws 422 with fields', () => {
@@ -8,9 +9,13 @@ describe('dto-validation', () => {
     const factory = (pipe as unknown as { exceptionFactory: (errors: unknown[]) => unknown })
       .exceptionFactory;
     const err = factory([{ property: 'websiteUrl', constraints: { isUrl: 'bad' } }]);
-    expect(err).toBeInstanceOf(UnprocessableEntityException);
-    expect((err as UnprocessableEntityException).getResponse()).toEqual({
-      error: { code: 'validation_error', message: expect.any(String), fields: ['websiteUrl'] },
+    expect(err).toBeInstanceOf(AppError);
+    expect((err as AppError).getEnvelope()).toEqual({
+      statusCode: 422,
+      error: 'validation_error',
+      message: expect.any(String),
+      fields: ['websiteUrl'],
     });
+    expect((err as AppError).getStatus()).toBe(422);
   });
 });

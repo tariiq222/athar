@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { AppError } from '../common/errors/error-envelope';
 import { BrandController } from './brand.controller';
 import { OnboardingService } from './onboarding.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -80,7 +80,7 @@ describe('BrandController', () => {
     const { service, prisma } = makeMocks();
     prisma.brandProfile.findFirst.mockResolvedValue(null);
     const ctrl = await buildController(service, prisma);
-    await expect(ctrl.get('other', tenant as any)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(ctrl.get('other', tenant as any)).rejects.toBeInstanceOf(AppError);
   });
 
   it('AC-6: PATCH /brand/profile/:id updates only present fields, tenant-scoped', async () => {
@@ -101,7 +101,7 @@ describe('BrandController', () => {
     prisma.brandProfile.findFirst.mockResolvedValue(null);
     const ctrl = await buildController(service, prisma);
     await expect(ctrl.patch('other', { tone: 'x' } as any, tenant as any)).rejects.toBeInstanceOf(
-      NotFoundException,
+      AppError,
     );
     expect(prisma.brandProfile.update).not.toHaveBeenCalled();
   });

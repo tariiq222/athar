@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, UnprocessableEntityException } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { BrandProfile } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AccountProfileService } from '../accounts/account-profile.service';
@@ -6,7 +6,7 @@ import { CONTENT_PROVIDER, SEARCH_PROVIDER } from '../engine/providers/provider.
 import type { ContentProvider, SummaryResult } from '../engine/providers/content-provider.interface';
 import type { SearchProvider } from '../engine/providers/search-provider.interface';
 import { BRAND_ANALYZE_CONFIG } from './brand.config';
-import { validationErrorBody } from '../common/errors/error-envelope';
+import { validationError } from '../common/errors/error-envelope';
 import { buildQuestions } from './build-questions';
 import type { AccountInputDto, OnboardingInputDto } from './dto/onboarding-input.dto';
 import type { BrandProfileDraftDto } from './dto/brand-profile-draft.dto';
@@ -42,9 +42,7 @@ export class OnboardingService {
     if (!draft.tone || draft.tone.trim().length === 0) missing.push('tone');
     if (!draft.topics || draft.topics.length === 0) missing.push('topics');
     if (missing.length > 0) {
-      throw new UnprocessableEntityException(
-        validationErrorBody('commit_incomplete', 'حقول إلزامية ناقصة', missing),
-      );
+      throw validationError('commit_incomplete', 'حقول إلزامية ناقصة', missing);
     }
 
     const profile = await this.prisma.brandProfile.create({
@@ -77,8 +75,10 @@ export class OnboardingService {
   async analyze(input: OnboardingInputDto, tenantId: string): Promise<BrandAnalysisResult> {
     // AC-8 (PDPL): consent is mandatory before any fetch.
     if (!input.consentAccepted) {
-      throw new UnprocessableEntityException(
-        validationErrorBody('consent_required', 'يجب قبول الموافقة قبل بدء التحليل', ['consentAccepted']),
+      throw validationError(
+        'consent_required',
+        'يجب قبول الموافقة قبل بدء التحليل',
+        ['consentAccepted'],
       );
     }
 

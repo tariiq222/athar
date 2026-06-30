@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { UnprocessableEntityException } from '@nestjs/common';
+import { AppError } from '../common/errors/error-envelope';
 import { OnboardingService } from './onboarding.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AccountProfileService } from '../accounts/account-profile.service';
@@ -50,7 +50,7 @@ describe('OnboardingService.analyze', () => {
     const { svc } = await buildHarness(prisma);
     await expect(
       svc.analyze({ websiteUrl: 'https://x.com', accounts: [], consentAccepted: false } as any, 't1'),
-    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    ).rejects.toBeInstanceOf(AppError);
     expect(prisma.usageRecord.create).not.toHaveBeenCalled();
   });
 
@@ -236,7 +236,7 @@ describe('OnboardingService.commit', () => {
     const prisma = makePrismaMock();
     const { svc } = await buildHarness(prisma);
     await expect(svc.commit({ ...draft, tone: '' }, 't1', [])).rejects.toMatchObject({
-      response: { error: { code: 'commit_incomplete', fields: ['tone'] } },
+      response: { statusCode: 422, error: 'commit_incomplete', fields: ['tone'] },
     });
     expect(prisma.brandProfile.create).not.toHaveBeenCalled();
   });
@@ -245,7 +245,7 @@ describe('OnboardingService.commit', () => {
     const prisma = makePrismaMock();
     const { svc } = await buildHarness(prisma);
     await expect(svc.commit({ ...draft, topics: [] }, 't1', [])).rejects.toMatchObject({
-      response: { error: { code: 'commit_incomplete', fields: ['topics'] } },
+      response: { statusCode: 422, error: 'commit_incomplete', fields: ['topics'] },
     });
   });
 });
