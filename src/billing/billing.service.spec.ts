@@ -237,14 +237,14 @@ describe('BillingService', () => {
       expect(invoices).toHaveLength(0);
     });
 
-    it('rejects when amount mismatch', async () => {
+    it('rejects when amount does not match either ex-VAT or VAT-inclusive', async () => {
       const { svc, invoices } = makeSvc({
         moyasar: {
           createPaymentIntent: jest.fn(),
           fetchPayment: jest.fn(async () => ({
             id: 'pay_1',
             status: 'paid',
-            amount: 1,
+            amount: 50000, // neither 59900 nor 68885
             currency: 'SAR',
             source: { type: 'creditcard' },
             metadata: { tenant_id: 't1', plan_code: 'business', cycle: 'monthly' },
@@ -253,7 +253,7 @@ describe('BillingService', () => {
       });
       await expect(
         svc.verifyAndActivate('pay_1', { tenantId: 't1', userId: 'u1' }),
-      ).rejects.toThrow(/amount/i);
+      ).rejects.toMatchObject({ response: { error: 'AMOUNT_MISMATCH' } });
       expect(invoices).toHaveLength(0);
     });
 
@@ -563,7 +563,7 @@ describe('BillingService', () => {
 
   // ---------------------------------------------------------------------
   describe('cancel', () => {
-    it('sets canceled and cancelAtPeriodEnd=true on the latest subscription', async () => {
+    it('flips cancelAtPeriodEnd=true on the latest subscription WITHOUT killing status (Sprint A — Task 5.1)', async () => {
       const updates: any[] = [];
       const { svc } = makeSvc({
         findFirst: jest.fn(async () => ({
@@ -579,14 +579,18 @@ describe('BillingService', () => {
         })),
         subscriptionUpdate: jest.fn(async ({ where, data }: any) => {
           updates.push({ where, data });
-          return { id: where.id, ...data };
+          // Mock returns the row AFTER update — status stays 'active' until
+          // the period-end cron flips it to 'canceled'.
+          return { id: where.id, status: 'active', ...data };
         }),
       });
       const out = await svc.cancel({ tenantId: 't1', userId: 'u1' });
-      expect(out.status).toBe('canceled');
+      // cancel returns the DB row after update — status stays 'active' until
+      // the period-end cron flips it to 'canceled'.
+      expect(out.status).toBe('active');
       expect(updates).toHaveLength(1);
-      expect(updates[0].data.status).toBe('canceled');
       expect(updates[0].data.cancelAtPeriodEnd).toBe(true);
+      expect(updates[0].data.status).toBeUndefined();
     });
 
     it('throws when no subscription exists', async () => {
@@ -594,6 +598,51 @@ describe('BillingService', () => {
       await expect(
         svc.cancel({ tenantId: 't1', userId: 'u1' }),
       ).rejects.toThrow(/no subscription/i);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Sprint A — Task 5.1: VAT-aware activation + ZATCA-compliant Invoice.
+  // ---------------------------------------------------------------------
+  describe('VAT-aware activation', () => {
+    it('accepts the VAT-inclusive amount (59900 + 15% = 68885) and writes ZATCA fields on the invoice', async () => {
+      const { svc, invoices } = makeSvc({
+        moyasar: {
+          createPaymentIntent: jest.fn(),
+          fetchPayment: jest.fn(async () => ({
+            id: 'pay_vat',
+            status: 'paid',
+            amount: BUSINESS_PLAN.priceMinorInclusive, // 68885
+            currency: 'SAR',
+            source: { type: 'creditcard' },
+            metadata: { tenant_id: 't1', plan_code: 'business', cycle: 'monthly' },
+          })),
+        },
+      });
+      const out = await svc.verifyAndActivate('pay_vat', { tenantId: 't1', userId: 'u1' });
+      expect(out.status).toBe('active');
+      expect(invoices).toHaveLength(1);
+      const inv = invoices[0];
+      // ZATCA fields populated
+      expect(inv.subtotalMinor).toBe(BUSINESS_PLAN.priceMinor); // 59900
+      expect(inv.vatMinor).toBe(BUSINESS_PLAN.priceMinorInclusive - BUSINESS_PLAN.priceMinor); // 8985
+      expect(inv.vatRate).toBeCloseTo(0.15, 5);
+      expect(inv.totalMinor).toBe(BUSINESS_PLAN.priceMinorInclusive);
+      expect(inv.legalBasis).toBe('contract');
+      expect(inv.retentionUntil).toBeInstanceOf(Date);
+      // 10-year retention (ZATCA)
+      const tenYears = inv.retentionUntil.getTime() - Date.now();
+      expect(tenYears).toBeGreaterThan(9 * 365 * 24 * 60 * 60 * 1000);
+    });
+
+    it('accepts the ex-VAT amount (59900) and writes VAT=0 on the invoice', async () => {
+      const { svc, invoices } = makeSvc();
+      // Default fetchPayment stub already returns amount=59900 (ex-VAT).
+      const out = await svc.verifyAndActivate('pay_1', { tenantId: 't1', userId: 'u1' });
+      expect(out.status).toBe('active');
+      expect(invoices[0].subtotalMinor).toBe(59900);
+      expect(invoices[0].vatMinor).toBe(0);
+      expect(invoices[0].totalMinor).toBe(59900);
     });
   });
 

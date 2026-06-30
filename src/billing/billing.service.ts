@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MoyasarClient } from './moyasar.client';
-import { BUSINESS_PLAN, PlanCode, PlanDefinition, resolvePlan } from '../config/billing-plans';
+import { PlanCode, PlanDefinition, resolvePlan } from '../config/billing-plans';
 import { MoyasarPayment, MoyasarWebhookEvent } from './billing.types';
-import { invoiceNotFound, paymentFailed } from '../common/errors/error-envelope';
+import { amountMismatch, invoiceNotFound, paymentFailed } from '../common/errors/error-envelope';
 
 export interface TenantCtx {
   tenantId: string;
@@ -118,15 +118,28 @@ export class BillingService {
       throw paymentFailed('invalid billing cycle');
     }
 
-    // Axis 2: amount must match expected (monthly vs annual)
+    // Axis 2: amount must match the expected plan price. We accept BOTH the
+    // ex-VAT amount AND the VAT-inclusive amount because some merchants (and
+    // most consumer-facing checkout flows) collect VAT on top and send us the
+    // gross figure. Reject anything else with AMOUNT_MISMATCH (422).
     const cycle: 'monthly' | 'annual' = payment.metadata.cycle;
-    const expected =
-      cycle === 'annual' ? BUSINESS_PLAN.annualPriceMinor : BUSINESS_PLAN.priceMinor;
-    if (payment.amount !== expected) {
-      throw new Error(
-        `amount mismatch: got ${payment.amount}, expected ${expected}`,
-      );
+    const plan = resolvePlan(payment.metadata.plan_code ?? 'business');
+    const expectedExVat =
+      cycle === 'annual' ? plan.annualPriceMinor : plan.priceMinor;
+    const expectedInclusive =
+      cycle === 'annual'
+        ? Math.round(plan.annualPriceMinor * (1 + plan.vatRate))
+        : plan.priceMinorInclusive;
+    if (payment.amount !== expectedExVat && payment.amount !== expectedInclusive) {
+      throw amountMismatch(payment.amount, [expectedExVat, expectedInclusive]);
     }
+    // Track which amount the merchant used so the invoice's VAT fields are
+    // populated correctly downstream.
+    const paidInclusive = payment.amount === expectedInclusive;
+    const subtotalMinor = paidInclusive
+      ? Math.round(expectedInclusive / (1 + plan.vatRate))
+      : expectedExVat;
+    const vatMinor = paidInclusive ? expectedInclusive - subtotalMinor : 0;
 
     // Axis 3: currency must be SAR
     if (payment.currency !== 'SAR') {
@@ -188,6 +201,12 @@ export class BillingService {
           moyasarPaymentId: payment.id,
           number: invoiceNumber,
           totalMinor: payment.amount,
+          subtotalMinor,
+          vatMinor,
+          vatRate: plan.vatRate,
+          taxableAmountMinor: subtotalMinor,
+          legalBasis: 'contract',
+          retentionUntil: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
           sellerName: this.config.get<string>('SELLER_NAME') ?? 'أثر',
           buyerName: tenant?.name ?? 'Customer',
         },
@@ -235,17 +254,21 @@ export class BillingService {
   }
 
   // ---------------------------------------------------------------------------
-  // 4) cancel — flag the latest subscription as canceled + cancelAtPeriodEnd.
+  // 4) cancel — flag cancel-at-period-end on the latest subscription. Status
+  // stays 'active' until a period-end cron (out of Sprint A scope; see
+  // follow-up Task 5.2) flips it to 'canceled'. Killing status immediately
+  // would lock paying customers out of the dashboard for the rest of the
+  // period they already paid for.
   // ---------------------------------------------------------------------------
   async cancel(ctx: TenantCtx) {
     const sub = await this.prisma.subscription.findFirst({
-      where: { tenantId: ctx.tenantId },
+      where: { tenantId: ctx.tenantId, status: { not: 'canceled' } },
       orderBy: { createdAt: 'desc' },
     });
     if (!sub) throw new Error('no subscription');
     const updated = await this.prisma.subscription.update({
       where: { id: sub.id },
-      data: { status: 'canceled', cancelAtPeriodEnd: true },
+      data: { cancelAtPeriodEnd: true },
     });
     return { status: updated.status, currentPeriodEnd: updated.currentPeriodEnd };
   }
