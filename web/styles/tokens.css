@@ -19,10 +19,11 @@
   --color-warning:      var(--color-accent);
   --color-error:        oklch(50% 0.15 25);      /* terracotta-tinted, AAA on cream */
 
-  /* Typography */
-  --font-display: 'TheYearofHandicrafts', 'IBM Plex Sans Arabic', serif;
-  --font-body:    'IBM Plex Sans Arabic', system-ui, sans-serif;
-  --font-latin:   'Effra', system-ui, sans-serif;
+  /* Typography — wired through next/font/local in app/layout.tsx, which
+     exposes each face as a CSS custom property on the <html> element. */
+  --font-display: var(--font-handicrafts), 'IBM Plex Sans Arabic', serif;
+  --font-body:    var(--font-plex-arabic), system-ui, sans-serif;
+  --font-latin:   var(--font-effra), system-ui, sans-serif;
 
   --text-display:  2.5rem;        /* 40px */
   --text-h2:       2rem;          /* 32px */
