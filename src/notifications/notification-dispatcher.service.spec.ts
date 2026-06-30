@@ -1,8 +1,5 @@
 import { NotificationDispatcher } from './notification-dispatcher.service';
-import type {
-  NotificationChannel,
-  ReminderNotification,
-} from './notification.types';
+import type { NotificationChannel, ReminderNotification } from './notification.types';
 
 const reminder: ReminderNotification = {
   tenantId: 't1',

@@ -11,9 +11,7 @@ import { register } from 'prom-client';
 @Controller('metrics')
 export class MetricsController {
   @Get()
-  metrics(
-    @Headers('x-admin-token') token: string | undefined,
-  ): Promise<string> {
+  metrics(@Headers('x-admin-token') token: string | undefined): Promise<string> {
     const expected = process.env.ADMIN_TOKEN;
     if (!expected || token !== expected) {
       // Synchronous throw so the guard fires before any I/O. Nest will

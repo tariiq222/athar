@@ -9,11 +9,7 @@ import type {
 
 // Minimal transporter contract so we don't couple to nodemailer's concrete type in tests.
 export interface MailTransporter {
-  sendMail(options: {
-    to: string;
-    subject: string;
-    html: string;
-  }): Promise<unknown>;
+  sendMail(options: { to: string; subject: string; html: string }): Promise<unknown>;
 }
 
 export const MAIL_TRANSPORTER = Symbol('MAIL_TRANSPORTER');
@@ -48,9 +44,7 @@ export class EmailChannel implements NotificationChannel {
 
   private render(payload: ReminderNotification): string {
     const e = payload.export;
-    const image = e.imageUrl
-      ? `<p><a href="${e.imageUrl}">تنزيل الصورة</a></p>`
-      : '';
+    const image = e.imageUrl ? `<p><a href="${e.imageUrl}">تنزيل الصورة</a></p>` : '';
     const escaped = e.formattedText
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
