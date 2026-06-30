@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface AuditEntry {
@@ -30,7 +31,7 @@ export class AuditLogService {
         targetId: entry.targetId ?? null,
         // Prisma's Json field type rejects `undefined` but accepts `null` and
         // objects; only spread metadata when it's actually provided.
-        ...(metadata !== undefined ? { metadata: metadata as any } : {}),
+        ...(metadata !== undefined ? { metadata: metadata as Prisma.InputJsonValue } : {}),
         ip: entry.ip ?? null,
         userAgent: entry.userAgent ?? null,
         createdAt: new Date(),

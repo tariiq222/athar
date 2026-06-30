@@ -1,9 +1,5 @@
 export type MoyasarEventType =
-  | 'payment_paid'
-  | 'payment_failed'
-  | 'payment_refunded'
-  | 'invoice_paid'
-  | 'invoice_expired';
+  'payment_paid' | 'payment_failed' | 'payment_refunded' | 'invoice_paid' | 'invoice_expired';
 
 export type MoyasarPaymentStatus = 'initiated' | 'paid' | 'failed' | 'refunded';
 

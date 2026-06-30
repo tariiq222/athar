@@ -3,7 +3,11 @@ import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import type { StringValue } from 'ms';
 import { ConfigService } from '@nestjs/config';
 import { AuthTokens, JwtPayload } from './auth.types';
-import { invalidRefreshToken, tokenExpired, unauthenticated } from '../common/errors/error-envelope';
+import {
+  invalidRefreshToken,
+  tokenExpired,
+  unauthenticated,
+} from '../common/errors/error-envelope';
 
 const SIGN_OPTS = {
   algorithm: 'HS256' as const,
@@ -27,10 +31,7 @@ export class TokenService {
     const accessTtl = (this.config.get<string>('JWT_ACCESS_TTL') ?? '15m') as StringValue;
     const refreshTtl = (this.config.get<string>('JWT_REFRESH_TTL') ?? '7d') as StringValue;
 
-    const accessToken = await this.signAccess(
-      { sub: userId, tenantId },
-      { expiresIn: accessTtl },
-    );
+    const accessToken = await this.signAccess({ sub: userId, tenantId }, { expiresIn: accessTtl });
     const refreshToken = await this.signRefresh(
       { sub: userId, tenantId },
       { expiresIn: refreshTtl },
@@ -55,7 +56,9 @@ export class TokenService {
         secret: this.config.get<string>('JWT_ACCESS_SECRET'),
         ...SIGN_OPTS,
         ...(options?.issuer ? { issuer: options.issuer } : {}),
-        ...(options?.expiresIn ? { expiresIn: options.expiresIn } : { expiresIn: '15m' as StringValue }),
+        ...(options?.expiresIn
+          ? { expiresIn: options.expiresIn }
+          : { expiresIn: '15m' as StringValue }),
       },
     );
   }
@@ -69,7 +72,9 @@ export class TokenService {
       {
         secret: this.config.get<string>('JWT_REFRESH_SECRET'),
         ...SIGN_OPTS,
-        ...(options?.expiresIn ? { expiresIn: options.expiresIn } : { expiresIn: '7d' as StringValue }),
+        ...(options?.expiresIn
+          ? { expiresIn: options.expiresIn }
+          : { expiresIn: '7d' as StringValue }),
       },
     );
   }

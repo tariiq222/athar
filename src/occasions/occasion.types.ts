@@ -1,10 +1,5 @@
 export type SaudiOccasionKind =
-  | 'national'
-  | 'foundation'
-  | 'ramadan'
-  | 'eid_fitr'
-  | 'eid_adha'
-  | 'commercial';
+  'national' | 'foundation' | 'ramadan' | 'eid_fitr' | 'eid_adha' | 'commercial';
 
 export const SAUDI_OCCASION_KINDS: readonly SaudiOccasionKind[] = [
   'national',

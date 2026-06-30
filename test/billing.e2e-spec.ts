@@ -53,7 +53,10 @@ async function bootApp(): Promise<{
   app: INestApplication;
   prisma: PrismaService;
   baseUrl: string;
-  fetchJson: <T>(path: string, init?: RequestInit) => Promise<{ status: number; body: Envelope<T> | T }>;
+  fetchJson: <T>(
+    path: string,
+    init?: RequestInit,
+  ) => Promise<{ status: number; body: Envelope<T> | T }>;
 }> {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   const app = moduleRef.createNestApplication({ logger: false });
@@ -118,7 +121,13 @@ describeDb('Billing (e2e)', () => {
     // Register a fresh tenant — creates user + trialing subscription.
     const reg = await fetchJson<AuthTokens>('/api/v1/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ tenantName: 'BillingE2E', email, password: 'longpass1', acceptTerms: true, termsVersion: 'v1' }),
+      body: JSON.stringify({
+        tenantName: 'BillingE2E',
+        email,
+        password: 'longpass1',
+        acceptTerms: true,
+        termsVersion: 'v1',
+      }),
     });
     expect(reg.status).toBe(201);
     const token = (reg.body as AuthTokens).accessToken;

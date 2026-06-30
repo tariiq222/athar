@@ -4,8 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { SaudiOccasion, SaudiOccasionKind } from './occasion.types';
 
 export interface ListOccasionsParams {
-  from: string;       // ISO date
-  to: string;         // ISO date
+  from: string; // ISO date
+  to: string; // ISO date
   kind?: SaudiOccasionKind;
 }
 
@@ -20,11 +20,11 @@ export class OccasionService {
     const where: Prisma.SaudiOccasionWhereInput = {
       AND: [
         { startDate: { lte: new Date(params.to) } },
-        { endDate:   { gte: new Date(params.from) } },
+        { endDate: { gte: new Date(params.from) } },
         {
           OR: [
-            { tenantId: null },          // public — visible to all tenants
-            { tenantId },                // tenant-specific
+            { tenantId: null }, // public — visible to all tenants
+            { tenantId }, // tenant-specific
           ],
         },
       ],

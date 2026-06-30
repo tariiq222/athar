@@ -33,7 +33,14 @@ async function buildController(service: any, prisma: any) {
     providers: [
       { provide: OnboardingService, useValue: service },
       { provide: PrismaService, useValue: prisma },
-      { provide: TokenService, useValue: { issueTokens: jest.fn(), verifyAccess: jest.fn(), verifyRefresh: jest.fn() } as any },
+      {
+        provide: TokenService,
+        useValue: {
+          issueTokens: jest.fn(),
+          verifyAccess: jest.fn(),
+          verifyRefresh: jest.fn(),
+        } as any,
+      },
       { provide: JwtAuthGuard, useValue: { canActivate: () => true } },
       { provide: TenantGuard, useValue: { canActivate: () => true } },
     ],
@@ -49,10 +56,7 @@ describe('BrandController', () => {
     service.buildQuestions.mockReturnValue([{ id: 'topics', field: 'topics' }]);
     const ctrl = await buildController(service, prisma);
     const out = await ctrl.analyze({ accounts: [], consentAccepted: true } as any, tenant as any);
-    expect(service.analyze).toHaveBeenCalledWith(
-      { accounts: [], consentAccepted: true },
-      't1',
-    );
+    expect(service.analyze).toHaveBeenCalledWith({ accounts: [], consentAccepted: true }, 't1');
     expect(out).toEqual({ analysis, questions: [{ id: 'topics', field: 'topics' }] });
   });
 
@@ -72,7 +76,9 @@ describe('BrandController', () => {
     prisma.brandProfile.findFirst.mockResolvedValue({ id: 'b1', tenantId: 't1' });
     const ctrl = await buildController(service, prisma);
     const out = await ctrl.get('b1', tenant as any);
-    expect(prisma.brandProfile.findFirst).toHaveBeenCalledWith({ where: { id: 'b1', tenantId: 't1' } });
+    expect(prisma.brandProfile.findFirst).toHaveBeenCalledWith({
+      where: { id: 'b1', tenantId: 't1' },
+    });
     expect(out).toEqual({ id: 'b1', tenantId: 't1' });
   });
 

@@ -76,6 +76,8 @@ describe('IdempotencyService', () => {
       },
     } as any;
     const svc = new IdempotencyService(prisma);
-    await expect(svc.claim('evt_1', 'payment_paid', 't1', {})).rejects.toThrow(/connection refused/);
+    await expect(svc.claim('evt_1', 'payment_paid', 't1', {})).rejects.toThrow(
+      /connection refused/,
+    );
   });
 });

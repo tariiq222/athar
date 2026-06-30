@@ -13,10 +13,7 @@ export class CalendarController {
   constructor(private readonly calendar: CalendarService) {}
 
   @Get()
-  async get(
-    @CurrentTenant() ctx: TenantContext,
-    @Query() query: GetCalendarDto,
-  ) {
+  async get(@CurrentTenant() ctx: TenantContext, @Query() query: GetCalendarDto) {
     const days = this.daysBetween(query.from, query.to);
     if (days > MAX_CALENDAR_RANGE_DAYS) {
       throw new AppError(

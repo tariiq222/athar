@@ -96,9 +96,7 @@ export const GLOBAL_TRUSTED_DOMAINS: readonly string[] = TRUSTED_DOMAINS;
  */
 export function tenantDomainsForTopics(topics: string[]): string[] {
   const domainLike = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
-  return topics
-    .map((t) => t.trim().toLowerCase())
-    .filter((t) => domainLike.test(t));
+  return topics.map((t) => t.trim().toLowerCase()).filter((t) => domainLike.test(t));
 }
 
 /**

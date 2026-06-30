@@ -56,9 +56,7 @@ describe('HealthController', () => {
           {
             provide: RedisHealthIndicator,
             useValue: {
-              pingCheck: jest
-                .fn()
-                .mockRejectedValue(new Error('redis unreachable')),
+              pingCheck: jest.fn().mockRejectedValue(new Error('redis unreachable')),
             },
           },
         ],
@@ -73,9 +71,7 @@ describe('HealthController', () => {
           throw new Error('Use the mongodb provider');
         },
         // Simulate a DB connection failure on the SQL fallback path.
-        $queryRawUnsafe: jest
-          .fn()
-          .mockRejectedValue(new Error('connection refused')),
+        $queryRawUnsafe: jest.fn().mockRejectedValue(new Error('connection refused')),
       };
       const moduleRef = await Test.createTestingModule({
         imports: [TerminusModule],
@@ -85,9 +81,7 @@ describe('HealthController', () => {
           {
             provide: RedisHealthIndicator,
             useValue: {
-              pingCheck: jest
-                .fn()
-                .mockResolvedValue({ redis: { status: 'up' } }),
+              pingCheck: jest.fn().mockResolvedValue({ redis: { status: 'up' } }),
             },
           },
         ],

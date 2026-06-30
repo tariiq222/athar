@@ -30,7 +30,10 @@ async function bootApp(): Promise<{
   app: INestApplication;
   prisma: PrismaService;
   baseUrl: string;
-  fetchJson: <T>(path: string, init?: RequestInit) => Promise<{ status: number; body: Envelope<T> | T }>;
+  fetchJson: <T>(
+    path: string,
+    init?: RequestInit,
+  ) => Promise<{ status: number; body: Envelope<T> | T }>;
 }> {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   const app = moduleRef.createNestApplication({ logger: false });
@@ -76,7 +79,13 @@ describeDb('Tenant isolation (e2e)', () => {
   async function registerAndBrand(email: string) {
     const reg = await fetchJson<AuthTokens>('/api/v1/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ tenantName: `Iso ${email}`, email, password: 'longpass1', acceptTerms: true, termsVersion: 'v1' }),
+      body: JSON.stringify({
+        tenantName: `Iso ${email}`,
+        email,
+        password: 'longpass1',
+        acceptTerms: true,
+        termsVersion: 'v1',
+      }),
     });
     expect(reg.status).toBe(201);
     const access = (reg.body as AuthTokens).accessToken;
@@ -182,19 +191,22 @@ describeDb('Tenant isolation (e2e)', () => {
     await prisma.accountProfile.deleteMany({ where: { id: bAccountId } });
   });
 
-  itDb('a forged tenantId in the create body is rejected (422) — scope cannot be forged', async () => {
-    const a = await registerAndBrand(emailAForge);
-    // Global pipe has forbidNonWhitelisted=true — extra props are rejected
-    // rather than silently stripped. That's the spec's "Decision" branch.
-    const res = await fetchJson('/api/v1/accounts', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${a.access}` },
-      body: JSON.stringify({
-        brandProfileId: a.brandProfileId,
-        platform: 'x',
-        tenantId: 'tenant-EVIL',
-      }),
-    });
-    expect(res.status).toBe(422);
-  });
+  itDb(
+    'a forged tenantId in the create body is rejected (422) — scope cannot be forged',
+    async () => {
+      const a = await registerAndBrand(emailAForge);
+      // Global pipe has forbidNonWhitelisted=true — extra props are rejected
+      // rather than silently stripped. That's the spec's "Decision" branch.
+      const res = await fetchJson('/api/v1/accounts', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${a.access}` },
+        body: JSON.stringify({
+          brandProfileId: a.brandProfileId,
+          platform: 'x',
+          tenantId: 'tenant-EVIL',
+        }),
+      });
+      expect(res.status).toBe(422);
+    },
+  );
 });

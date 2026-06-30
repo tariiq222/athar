@@ -15,7 +15,12 @@ function ctx(opts: {
   if (opts.csrfCookie !== undefined) cookies['csrf_token'] = opts.csrfCookie;
   return {
     switchToHttp: () => ({
-      getRequest: () => ({ method: opts.method, path: opts.path ?? '/api/v1/posts/1', headers, cookies }),
+      getRequest: () => ({
+        method: opts.method,
+        path: opts.path ?? '/api/v1/posts/1',
+        headers,
+        cookies,
+      }),
     }),
   } as unknown as ExecutionContext;
 }
@@ -36,15 +41,15 @@ describe('CsrfGuard', () => {
   });
 
   it('allows Bearer-token requests (token auth is not CSRF-vulnerable)', () => {
-    expect(
-      guard.canActivate(ctx({ method: 'PATCH', authorization: 'Bearer abc.def.ghi' })),
-    ).toBe(true);
+    expect(guard.canActivate(ctx({ method: 'PATCH', authorization: 'Bearer abc.def.ghi' }))).toBe(
+      true,
+    );
   });
 
   it('accepts a cookie-session mutation when csrf cookie matches the header', () => {
-    expect(
-      guard.canActivate(ctx({ method: 'POST', csrfCookie: 'tok', csrfHeader: 'tok' })),
-    ).toBe(true);
+    expect(guard.canActivate(ctx({ method: 'POST', csrfCookie: 'tok', csrfHeader: 'tok' }))).toBe(
+      true,
+    );
   });
 
   it('rejects a cookie-session mutation with no csrf cookie', () => {

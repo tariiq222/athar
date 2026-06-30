@@ -20,7 +20,10 @@ export class TenantThrottlerGuard extends ThrottlerGuard {
    * Returns the tracker key for the throttler storage.
    * Priority: explicit tenantContext.tenantId -> req.ip.
    */
-  protected async getTracker(req: Record<string, any>): Promise<string> {
+  protected async getTracker(req: {
+    tenantContext?: { tenantId?: unknown };
+    ip?: string;
+  }): Promise<string> {
     const tenantId = req?.tenantContext?.tenantId;
     if (typeof tenantId === 'string' && tenantId.length > 0) {
       return tenantId;

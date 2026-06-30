@@ -54,7 +54,10 @@ export class AuthController {
   ): Promise<AuthTokens> {
     const tokens = await this.auth.register(dto);
     const csrf = this.csrf.issue();
-    res.setHeader('Set-Cookie', [this.sessionCookie(tokens.accessToken), this.csrfCookie(csrf.token)]);
+    res.setHeader('Set-Cookie', [
+      this.sessionCookie(tokens.accessToken),
+      this.csrfCookie(csrf.token),
+    ]);
     return { ...tokens, csrfToken: csrf.token };
   }
 
@@ -67,7 +70,10 @@ export class AuthController {
   ): Promise<AuthTokens> {
     const tokens = await this.auth.login(dto);
     const csrf = this.csrf.issue();
-    res.setHeader('Set-Cookie', [this.sessionCookie(tokens.accessToken), this.csrfCookie(csrf.token)]);
+    res.setHeader('Set-Cookie', [
+      this.sessionCookie(tokens.accessToken),
+      this.csrfCookie(csrf.token),
+    ]);
     return { ...tokens, csrfToken: csrf.token };
   }
 
@@ -80,7 +86,10 @@ export class AuthController {
   ): Promise<AuthTokens> {
     const tokens = await this.auth.refresh(dto);
     const csrf = this.csrf.issue();
-    res.setHeader('Set-Cookie', [this.sessionCookie(tokens.accessToken), this.csrfCookie(csrf.token)]);
+    res.setHeader('Set-Cookie', [
+      this.sessionCookie(tokens.accessToken),
+      this.csrfCookie(csrf.token),
+    ]);
     return { ...tokens, csrfToken: csrf.token };
   }
 }

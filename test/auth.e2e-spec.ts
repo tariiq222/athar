@@ -49,7 +49,10 @@ async function bootApp(): Promise<{
   app: INestApplication;
   prisma: PrismaService;
   baseUrl: string;
-  fetchJson: <T>(path: string, init?: RequestInit) => Promise<{ status: number; body: Envelope<T> | T }>;
+  fetchJson: <T>(
+    path: string,
+    init?: RequestInit,
+  ) => Promise<{ status: number; body: Envelope<T> | T }>;
 }> {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   const app = moduleRef.createNestApplication({ logger: false });
@@ -66,7 +69,10 @@ async function bootApp(): Promise<{
   const baseUrl = `http://127.0.0.1:${addr.port}`;
   const prisma = app.get(PrismaService);
 
-  const fetchJson: <T>(path: string, init?: RequestInit) => Promise<{
+  const fetchJson: <T>(
+    path: string,
+    init?: RequestInit,
+  ) => Promise<{
     status: number;
     body: Envelope<T> | T;
   }> = async <T>(path: string, init: RequestInit = {}) => {
@@ -107,7 +113,13 @@ describeDb('Auth (e2e)', () => {
     // 1) register creates a tenant + user + trial subscription and returns tokens.
     const reg = await fetchJson<AuthTokens>('/api/v1/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ tenantName: 'E2E Co', email, password: 'longpass1', acceptTerms: true, termsVersion: 'v1' }),
+      body: JSON.stringify({
+        tenantName: 'E2E Co',
+        email,
+        password: 'longpass1',
+        acceptTerms: true,
+        termsVersion: 'v1',
+      }),
     });
     expect(reg.status).toBe(201);
     expect((reg.body as AuthTokens).accessToken).toBeDefined();
@@ -134,9 +146,7 @@ describeDb('Auth (e2e)', () => {
     expect(me.status).toBe(200);
     expect((me.body as { user: { email: string } }).user.email).toBe(email);
     expect((me.body as { user: { passwordHash?: string } }).user.passwordHash).toBeUndefined();
-    expect(
-      (me.body as { subscription: { status: string } }).subscription.status,
-    ).toBe('trialing');
+    expect((me.body as { subscription: { status: string } }).subscription.status).toBe('trialing');
 
     // 4) POST /auth/refresh rotates the refresh token. Two JWTs issued in the
     //    same second can be byte-identical because their `iat` is the same,
@@ -151,7 +161,9 @@ describeDb('Auth (e2e)', () => {
     const refreshedBody = refreshed.body as AuthTokens;
     expect(refreshedBody.accessToken).toBeDefined();
     expect(refreshedBody.refreshToken).toBeDefined();
-    const decoded = decodeJwt<{ sub: string; tenantId: string; type: string }>(refreshedBody.refreshToken);
+    const decoded = decodeJwt<{ sub: string; tenantId: string; type: string }>(
+      refreshedBody.refreshToken,
+    );
     expect(decoded.type).toBe('refresh');
     expect(typeof decoded.sub).toBe('string');
     expect(typeof decoded.tenantId).toBe('string');
@@ -177,7 +189,13 @@ describeDb('Auth (e2e)', () => {
   itDb('register with a duplicate email returns 409 EMAIL_ALREADY_EXISTS', async () => {
     const res = await fetchJson('/api/v1/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ tenantName: 'E2E Co', email, password: 'longpass1', acceptTerms: true, termsVersion: 'v1' }),
+      body: JSON.stringify({
+        tenantName: 'E2E Co',
+        email,
+        password: 'longpass1',
+        acceptTerms: true,
+        termsVersion: 'v1',
+      }),
     });
     expect(res.status).toBe(409);
     expect((res.body as Envelope<unknown>).error).toBe('EMAIL_ALREADY_EXISTS');

@@ -4,9 +4,7 @@ describe('DeepLinkBuilder', () => {
   const b = new DeepLinkBuilder();
 
   it('LinkedIn returns the share-active composer URL', () => {
-    expect(b.build('linkedin', 'anything')).toBe(
-      'https://www.linkedin.com/feed/?shareActive=true',
-    );
+    expect(b.build('linkedin', 'anything')).toBe('https://www.linkedin.com/feed/?shareActive=true');
   });
 
   it('X injects short text into the intent (url-encoded)', () => {

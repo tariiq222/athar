@@ -6,8 +6,8 @@ import { SaudiOccasionKind } from '../occasions/occasion.types';
 import { CalendarPostSummary, PostPlatform } from '../posts/post.types';
 
 export interface GetCalendarParams {
-  from: string;          // ISO date
-  to: string;            // ISO date
+  from: string; // ISO date
+  to: string; // ISO date
   platform?: PostPlatform;
   kind?: SaudiOccasionKind;
 }

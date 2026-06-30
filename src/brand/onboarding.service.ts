@@ -3,18 +3,17 @@ import type { BrandProfile } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AccountProfileService } from '../accounts/account-profile.service';
 import { CONTENT_PROVIDER, SEARCH_PROVIDER } from '../engine/providers/provider.tokens';
-import type { ContentProvider, SummaryResult } from '../engine/providers/content-provider.interface';
+import type {
+  ContentProvider,
+  SummaryResult,
+} from '../engine/providers/content-provider.interface';
 import type { SearchProvider } from '../engine/providers/search-provider.interface';
 import { BRAND_ANALYZE_CONFIG } from './brand.config';
 import { validationError } from '../common/errors/error-envelope';
 import { buildQuestions } from './build-questions';
 import type { AccountInputDto, OnboardingInputDto } from './dto/onboarding-input.dto';
 import type { BrandProfileDraftDto } from './dto/brand-profile-draft.dto';
-import type {
-  BrandAnalysisResult,
-  ConfirmationQuestion,
-  FetchStatus,
-} from './types';
+import type { BrandAnalysisResult, ConfirmationQuestion, FetchStatus } from './types';
 
 @Injectable()
 export class OnboardingService {
@@ -75,11 +74,9 @@ export class OnboardingService {
   async analyze(input: OnboardingInputDto, tenantId: string): Promise<BrandAnalysisResult> {
     // AC-8 (PDPL): consent is mandatory before any fetch.
     if (!input.consentAccepted) {
-      throw validationError(
-        'consent_required',
-        'يجب قبول الموافقة قبل بدء التحليل',
-        ['consentAccepted'],
-      );
+      throw validationError('consent_required', 'يجب قبول الموافقة قبل بدء التحليل', [
+        'consentAccepted',
+      ]);
     }
 
     const notes: string[] = [];
@@ -173,10 +170,7 @@ export class OnboardingService {
     };
   }
 
-  private deriveSource(
-    websiteOk: boolean,
-    anyAccountOk: boolean,
-  ): BrandAnalysisResult['source'] {
+  private deriveSource(websiteOk: boolean, anyAccountOk: boolean): BrandAnalysisResult['source'] {
     if (websiteOk && anyAccountOk) return 'mixed';
     if (websiteOk) return 'website';
     if (anyAccountOk) return 'accounts';

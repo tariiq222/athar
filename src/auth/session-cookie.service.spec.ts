@@ -2,7 +2,12 @@ import { SessionCookieService } from './session-cookie.service';
 
 function fakeRes(): { headers: Record<string, string | string[]> } & { setHeader: jest.Mock } {
   const headers: Record<string, string | string[]> = {};
-  return { headers, setHeader: jest.fn((name: string, value: string) => { headers[name.toLowerCase()] = value; }) };
+  return {
+    headers,
+    setHeader: jest.fn((name: string, value: string) => {
+      headers[name.toLowerCase()] = value;
+    }),
+  };
 }
 
 describe('SessionCookieService', () => {
@@ -24,27 +29,29 @@ describe('SessionCookieService', () => {
     process.env.NODE_ENV = 'production';
     const res = fakeRes();
     svc.issue(res as any, 'token');
-    expect((res.headers['set-cookie'] as string)).toContain('Secure');
+    expect(res.headers['set-cookie'] as string).toContain('Secure');
   });
 
   it('issue() omits Secure in development (NODE_ENV != production)', () => {
     process.env.NODE_ENV = 'development';
     const res = fakeRes();
     svc.issue(res as any, 'token');
-    expect((res.headers['set-cookie'] as string)).not.toContain('Secure');
+    expect(res.headers['set-cookie'] as string).not.toContain('Secure');
   });
 
   it('clear() sets Max-Age=0 to expire immediately', () => {
     const res = fakeRes();
     svc.clear(res as any);
-    expect((res.headers['set-cookie'] as string)).toContain('Max-Age=0');
+    expect(res.headers['set-cookie'] as string).toContain('Max-Age=0');
   });
 
   describe('sessionCookieHeader()', () => {
     it('produces session_token with HttpOnly, SameSite=Lax, Path=/, Max-Age=900', () => {
       process.env.NODE_ENV = 'development';
       const header = svc.sessionCookieHeader('jwt.access.token');
-      expect(header).toBe('session_token=jwt.access.token; HttpOnly; SameSite=Lax; Path=/; Max-Age=900');
+      expect(header).toBe(
+        'session_token=jwt.access.token; HttpOnly; SameSite=Lax; Path=/; Max-Age=900',
+      );
     });
 
     it('appends Secure in production', () => {

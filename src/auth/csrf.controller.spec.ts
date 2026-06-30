@@ -14,7 +14,10 @@ describe('CsrfController', () => {
     const body = ctrl.csrf(res as any);
     expect(typeof body.csrfToken).toBe('string');
     expect(body.csrfToken.length).toBeGreaterThan(20);
-    expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('csrf_token='));
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'Set-Cookie',
+      expect.stringContaining('csrf_token='),
+    );
     const cookie = res.setHeader.mock.calls[0][1] as string;
     expect(cookie).toContain(`csrf_token=${body.csrfToken}`);
     expect(cookie).toContain('SameSite=Lax');

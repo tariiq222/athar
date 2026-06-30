@@ -1,7 +1,10 @@
 import { SessionMiddleware } from './session.middleware';
 import { TokenService } from './token.service';
 
-function makeReq(cookies: Record<string, string> = {}): { cookies: Record<string, string>; user?: unknown } {
+function makeReq(cookies: Record<string, string> = {}): {
+  cookies: Record<string, string>;
+  user?: unknown;
+} {
   return { cookies };
 }
 

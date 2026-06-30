@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 // Sprint A — Task 6.1: webhook idempotency keyed by the upstream event id.
@@ -23,7 +24,7 @@ export class IdempotencyService {
           id: eventId,
           type,
           tenantId: tenantId ?? null,
-          payload: payload as any,
+          payload: payload as Prisma.InputJsonValue,
         },
       });
       return true;
@@ -31,7 +32,12 @@ export class IdempotencyService {
       // Prisma P2002 = unique constraint violation on the primary key.
       // The event was already claimed by a previous delivery → treat as
       // "not first" so the caller can ack and skip.
-      if (err && typeof err === 'object' && 'code' in err && (err as { code: unknown }).code === 'P2002') {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        (err as { code: unknown }).code === 'P2002'
+      ) {
         return false;
       }
       throw err;

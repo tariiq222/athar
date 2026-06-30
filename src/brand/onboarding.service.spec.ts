@@ -49,7 +49,10 @@ describe('OnboardingService.analyze', () => {
     const prisma = makePrismaMock();
     const { svc } = await buildHarness(prisma);
     await expect(
-      svc.analyze({ websiteUrl: 'https://x.com', accounts: [], consentAccepted: false } as any, 't1'),
+      svc.analyze(
+        { websiteUrl: 'https://x.com', accounts: [], consentAccepted: false } as any,
+        't1',
+      ),
     ).rejects.toBeInstanceOf(AppError);
     expect(prisma.usageRecord.create).not.toHaveBeenCalled();
   });
@@ -73,12 +76,16 @@ describe('OnboardingService.analyze', () => {
     const prisma = makePrismaMock();
     const { svc } = await buildHarness(prisma);
     await svc.analyze(
-      { websiteUrl: 'https://example.com', accounts: [{ platform: 'x', handle: '@a' }], consentAccepted: true } as any,
+      {
+        websiteUrl: 'https://example.com',
+        accounts: [{ platform: 'x', handle: '@a' }],
+        consentAccepted: true,
+      } as any,
       't1',
     );
     const kinds = prisma.usageRecord.create.mock.calls.map((c: any[]) => c[0].data.kind);
     expect(kinds.filter((k: string) => k === 'search').length).toBe(2); // website + 1 account
-    expect(kinds.filter((k: string) => k === 'text').length).toBe(1);    // one summarize
+    expect(kinds.filter((k: string) => k === 'text').length).toBe(1); // one summarize
     prisma.usageRecord.create.mock.calls.forEach((c: any[]) =>
       expect(c[0].data.tenantId).toBe('t1'),
     );

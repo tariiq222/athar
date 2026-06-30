@@ -38,15 +38,19 @@ export class UserService {
 
   async exportData(ctx: TenantContext) {
     const where = { tenantId: ctx.tenantId };
-    const [tenant, users, brandProfiles, posts, accountProfiles, subscriptions] =
-      await Promise.all([
-        this.prisma.tenant.findFirst({ where: { id: ctx.tenantId }, select: { id: true, name: true } }),
+    const [tenant, users, brandProfiles, posts, accountProfiles, subscriptions] = await Promise.all(
+      [
+        this.prisma.tenant.findFirst({
+          where: { id: ctx.tenantId },
+          select: { id: true, name: true },
+        }),
         this.prisma.user.findMany({ where, select: SAFE_USER_SELECT }),
         this.prisma.brandProfile.findMany({ where }),
         this.prisma.post.findMany({ where }),
         this.prisma.accountProfile.findMany({ where }),
         this.prisma.subscription.findMany({ where }),
-      ]);
+      ],
+    );
 
     return {
       exportedAt: new Date().toISOString(),

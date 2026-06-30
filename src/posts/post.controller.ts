@@ -14,10 +14,7 @@ export class PostController {
   constructor(private readonly posts: PostService) {}
 
   @Get()
-  async list(
-    @CurrentTenant() ctx: TenantContext,
-    @Query() query: ListPostsDto,
-  ) {
+  async list(@CurrentTenant() ctx: TenantContext, @Query() query: ListPostsDto) {
     return this.posts.list(ctx.tenantId, query);
   }
 

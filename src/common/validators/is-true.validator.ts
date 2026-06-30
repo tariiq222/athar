@@ -1,8 +1,4 @@
-import {
-  registerDecorator,
-  ValidationArguments,
-  ValidationOptions,
-} from 'class-validator';
+import { registerDecorator, ValidationArguments, ValidationOptions } from 'class-validator';
 
 // Sprint A — Task 4.1: PDPL consent gate. Used by RegisterDto.acceptTerms
 // to enforce "must be true" — a `@IsBoolean()` field still accepts `false`,

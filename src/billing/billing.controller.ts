@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../tenant/jwt-auth.guard';
@@ -39,10 +30,7 @@ export class BillingController {
 
   @Post('subscribe')
   @UseGuards(JwtAuthGuard, TenantGuard)
-  async subscribe(
-    @CurrentTenant() ctx: TenantContext,
-    @Body() dto: SubscribeDto,
-  ) {
+  async subscribe(@CurrentTenant() ctx: TenantContext, @Body() dto: SubscribeDto) {
     return this.billing.createSubscriptionIntent(ctx, dto.planCode, dto.cycle);
   }
 
@@ -124,10 +112,7 @@ export class BillingController {
 
   @Get('invoice/:id')
   @UseGuards(JwtAuthGuard, TenantGuard)
-  async invoice(
-    @CurrentTenant() ctx: TenantContext,
-    @Param('id') id: string,
-  ) {
+  async invoice(@CurrentTenant() ctx: TenantContext, @Param('id') id: string) {
     return this.billing.getInvoice(ctx, id);
   }
 }

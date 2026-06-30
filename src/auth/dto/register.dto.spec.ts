@@ -67,7 +67,9 @@ describe('auth DTOs', () => {
 
   it('LoginDto requires email and a non-empty password', () => {
     const dto = plainToInstance(LoginDto, { email: 'x', password: '' });
-    const props = validateSync(dto).map((e) => e.property).sort();
+    const props = validateSync(dto)
+      .map((e) => e.property)
+      .sort();
     expect(props).toEqual(['email', 'password']);
   });
 
@@ -79,8 +81,7 @@ describe('auth DTOs', () => {
     });
     // a structurally JWT-like string (three base64url segments)
     const ok = plainToInstance(RefreshDto, {
-      refreshToken:
-        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.dGVzdHNpZ25hdHVyZXZhbHVlMTIz',
+      refreshToken: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.dGVzdHNpZ25hdHVyZXZhbHVlMTIz',
     });
     expect(validateSync(ok)).toHaveLength(0);
     expect(bad).toBeDefined();

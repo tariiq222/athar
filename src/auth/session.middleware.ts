@@ -2,10 +2,15 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 import { TokenService } from './token.service';
 
-export interface SessionUser { sub: string; tenantId: string }
+export interface SessionUser {
+  sub: string;
+  tenantId: string;
+}
 
 declare module 'express-serve-static-core' {
-  interface Request { user?: SessionUser }
+  interface Request {
+    user?: SessionUser;
+  }
 }
 
 @Injectable()

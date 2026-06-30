@@ -42,7 +42,14 @@ describe('Publishing (e2e smoke)', () => {
       },
     };
     const moduleRef = await Test.createTestingModule({
-      imports: [PublishingModule, PrismaModule, ThrottlerModule.forRoot([{ name: 'short', ttl: 1000, limit: 3 }, { name: 'medium', ttl: 60_000, limit: 20 }])],
+      imports: [
+        PublishingModule,
+        PrismaModule,
+        ThrottlerModule.forRoot([
+          { name: 'short', ttl: 1000, limit: 3 },
+          { name: 'medium', ttl: 60_000, limit: 20 },
+        ]),
+      ],
     })
       .overrideProvider(PrismaService)
       .useValue({ post: { findFirst: async () => approvedPost } })

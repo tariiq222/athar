@@ -13,10 +13,7 @@ export class AccountProfileService {
     return this.prisma.accountProfile.findMany({ where: { tenantId } });
   }
 
-  createForTenant(
-    tenantId: string,
-    dto: CreateAccountProfileDto,
-  ): Promise<AccountProfile> {
+  createForTenant(tenantId: string, dto: CreateAccountProfileDto): Promise<AccountProfile> {
     // tenantId comes ONLY from the verified context; any DTO tenantId is ignored.
     return this.prisma.accountProfile.create({
       data: {

@@ -54,10 +54,11 @@ describe('BillingController', () => {
         createPaymentIntent: jest.fn(),
         fetchPayment: jest.fn(),
       } as any);
-    const config = overrides.config ?? {
-      get: (k: string) =>
-        ({ MOYASAR_WEBHOOK_SECRET: SECRET } as Record<string, string>)[k],
-    } as any;
+    const config =
+      overrides.config ??
+      ({
+        get: (k: string) => (({ MOYASAR_WEBHOOK_SECRET: SECRET }) as Record<string, string>)[k],
+      } as any);
     const idempotency = overrides.idempotency ?? {
       claim: jest.fn(async () => true),
       markProcessed: jest.fn(async () => undefined),
@@ -72,11 +73,7 @@ describe('BillingController', () => {
     const { ctrl, billing } = make();
     await ctrl.subscribe(ctx, { planCode: 'business', cycle: 'monthly' });
     expect(billing.createSubscriptionIntent).toHaveBeenCalledTimes(1);
-    expect(billing.createSubscriptionIntent).toHaveBeenCalledWith(
-      ctx,
-      'business',
-      'monthly',
-    );
+    expect(billing.createSubscriptionIntent).toHaveBeenCalledWith(ctx, 'business', 'monthly');
   });
 
   describe('webhook (HMAC + idempotency)', () => {
@@ -153,7 +150,9 @@ describe('BillingController', () => {
         rawBody: tampered,
         headers: { signature: sign(sentBody) },
       };
-      await expect(ctrl.webhook(tamperedReq as any, buildBody({ id: 'evt_evil' }))).rejects.toMatchObject({
+      await expect(
+        ctrl.webhook(tamperedReq as any, buildBody({ id: 'evt_evil' })),
+      ).rejects.toMatchObject({
         code: 'WEBHOOK_SIGNATURE_INVALID',
       });
       expect(billing.handleWebhookEvent).not.toHaveBeenCalled();

@@ -3,8 +3,19 @@ import { UserService } from './user.service';
 
 function makePrismaMock() {
   const tenant = { id: 't1', name: 'Acme', deletedAt: null, purgeAfter: null };
-  const users = [{ id: 'u1', tenantId: 't1', email: 'a@b.com', name: 'A', passwordHash: 'H', refreshTokenHash: 'R' }];
-  const subscriptions = [{ id: 's1', tenantId: 't1', status: 'trialing', plan: 'trial', trialEndsAt: new Date() }];
+  const users = [
+    {
+      id: 'u1',
+      tenantId: 't1',
+      email: 'a@b.com',
+      name: 'A',
+      passwordHash: 'H',
+      refreshTokenHash: 'R',
+    },
+  ];
+  const subscriptions = [
+    { id: 's1', tenantId: 't1', status: 'trialing', plan: 'trial', trialEndsAt: new Date() },
+  ];
   return {
     tenant,
     users,
@@ -31,7 +42,11 @@ function makePrismaMock() {
           }),
       updateMany: async ({ where, data }: any) => {
         let count = 0;
-        for (const u of users) if (u.tenantId === where.tenantId) { Object.assign(u, data); count++; }
+        for (const u of users)
+          if (u.tenantId === where.tenantId) {
+            Object.assign(u, data);
+            count++;
+          }
         return { count };
       },
     },
@@ -40,11 +55,15 @@ function makePrismaMock() {
     subscription: {
       findFirst: async ({ where }: any) =>
         subscriptions.filter((s) => s.tenantId === where.tenantId).slice(-1)[0] ?? null,
-      findMany: async ({ where }: any) => subscriptions.filter((s) => s.tenantId === where.tenantId),
+      findMany: async ({ where }: any) =>
+        subscriptions.filter((s) => s.tenantId === where.tenantId),
     },
     brandProfile: { findMany: async () => [] },
     post: { findMany: async () => [] },
-    accountProfile: { findMany: async ({ where }: any) => (where.tenantId === 't1' ? [{ id: 'ap1', tenantId: 't1' }] : []) },
+    accountProfile: {
+      findMany: async ({ where }: any) =>
+        where.tenantId === 't1' ? [{ id: 'ap1', tenantId: 't1' }] : [],
+    },
     tenantTable: {
       findFirst: async ({ where, select }: any) => {
         if (tenant.id !== where.id) return null;
@@ -53,18 +72,27 @@ function makePrismaMock() {
         for (const k of Object.keys(select)) if (select[k]) out[k] = (tenant as any)[k];
         return out;
       },
-      update: async ({ where: _where, data }: any) => { Object.assign(tenant, data); return tenant; },
+      update: async ({ where: _where, data }: any) => {
+        Object.assign(tenant, data);
+        return tenant;
+      },
     },
   };
 }
 
 // Bind the tenant delegate name used by the service.
 function asPrisma(mock: any) {
-  return { ...mock, tenant: { findFirst: mock.tenantTable.findFirst, update: mock.tenantTable.update }, _t: mock.tenant };
+  return {
+    ...mock,
+    tenant: { findFirst: mock.tenantTable.findFirst, update: mock.tenantTable.update },
+    _t: mock.tenant,
+  };
 }
 
 function makeService(mock: any) {
-  const config = { get: (k: string) => ({ PURGE_RETENTION_DAYS: '30' }[k]) } as unknown as ConfigService;
+  const config = {
+    get: (k: string) => ({ PURGE_RETENTION_DAYS: '30' })[k],
+  } as unknown as ConfigService;
   return new UserService(asPrisma(mock) as any, config);
 }
 

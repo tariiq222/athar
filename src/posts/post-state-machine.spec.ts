@@ -28,9 +28,7 @@ describe('PostStateMachine', () => {
   });
 
   it('rejects a transition whose from does not match the current status', () => {
-    expect(() =>
-      sm.assertTransition('draft', { from: 'pending_review', to: 'approved' }),
-    ).toThrow(
+    expect(() => sm.assertTransition('draft', { from: 'pending_review', to: 'approved' })).toThrow(
       expect.objectContaining({
         message: expect.stringContaining('الحالة الحالية'),
       }),
@@ -52,9 +50,9 @@ describe('PostStateMachine', () => {
   // ── additional edge cases ─────────────────────────────────────────────────
 
   it('rejects draft → draft self-transition as INVALID_TRANSITION', () => {
-    expect(() =>
-      sm.assertTransition('draft', { from: 'draft', to: 'draft' }),
-    ).toThrow(expect.objectContaining({ code: 'INVALID_TRANSITION' }));
+    expect(() => sm.assertTransition('draft', { from: 'draft', to: 'draft' })).toThrow(
+      expect.objectContaining({ code: 'INVALID_TRANSITION' }),
+    );
   });
 
   it('rejects pending_review → published as INVALID_TRANSITION', () => {
@@ -64,9 +62,9 @@ describe('PostStateMachine', () => {
   });
 
   it('rejects published → draft (no way back from published)', () => {
-    expect(() =>
-      sm.assertTransition('published', { from: 'published', to: 'draft' }),
-    ).toThrow(expect.objectContaining({ code: 'INVALID_TRANSITION' }));
+    expect(() => sm.assertTransition('published', { from: 'published', to: 'draft' })).toThrow(
+      expect.objectContaining({ code: 'INVALID_TRANSITION' }),
+    );
   });
 
   it('rejects published → pending_review (no way back from published)', () => {
@@ -76,9 +74,9 @@ describe('PostStateMachine', () => {
   });
 
   it('rejects published → approved (no way back from published)', () => {
-    expect(() =>
-      sm.assertTransition('published', { from: 'published', to: 'approved' }),
-    ).toThrow(expect.objectContaining({ code: 'INVALID_TRANSITION' }));
+    expect(() => sm.assertTransition('published', { from: 'published', to: 'approved' })).toThrow(
+      expect.objectContaining({ code: 'INVALID_TRANSITION' }),
+    );
   });
 
   it('isAllowed returns false for published → anything', () => {

@@ -5,8 +5,18 @@ describe('TrialExpiryProcessor', () => {
     const updates: any[] = [];
     const prisma = {
       subscription: {
-        findMany: jest.fn(async () => [{ id: 's1', tenantId: 't1', status: 'trialing', trialEndsAt: new Date(Date.now() - 1000) }]),
-        update: jest.fn(async ({ where, data }: any) => { updates.push({ where, data }); return { where, data }; }),
+        findMany: jest.fn(async () => [
+          {
+            id: 's1',
+            tenantId: 't1',
+            status: 'trialing',
+            trialEndsAt: new Date(Date.now() - 1000),
+          },
+        ]),
+        update: jest.fn(async ({ where, data }: any) => {
+          updates.push({ where, data });
+          return { where, data };
+        }),
       },
     } as any;
     const proc = new TrialExpiryProcessor(prisma);

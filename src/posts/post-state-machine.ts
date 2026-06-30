@@ -26,11 +26,7 @@ export class PostStateMachine {
   // any transition.to === 'published' (only Phase 5 marks published).
   assertTransition(currentStatus: PostStatus, transition: PostStatusTransition): void {
     if (transition.from !== currentStatus) {
-      throw new AppError(
-        409,
-        'INVALID_TRANSITION',
-        'الحالة الحالية لا تطابق نقطة بداية الانتقال',
-      );
+      throw new AppError(409, 'INVALID_TRANSITION', 'الحالة الحالية لا تطابق نقطة بداية الانتقال');
     }
     if (!this.isAllowed(transition.from, transition.to)) {
       throw new AppError(409, 'INVALID_TRANSITION', 'انتقال غير مسموح به');

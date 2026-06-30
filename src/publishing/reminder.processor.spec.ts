@@ -44,14 +44,12 @@ function setup(
   return { proc, prisma, findFirst, update, exportSvc, dispatcher };
 }
 
-const job = (data: any) => ({ data } as any);
+const job = (data: any) => ({ data }) as any;
 
 describe('ReminderProcessor', () => {
   it('delivers and marks the reminder sent', async () => {
     const { proc, findFirst, update, dispatcher } = setup();
-    await proc.process(
-      job({ reminderId: 'r1', postId: 'p1', tenantId: 't1', channel: 'in_app' }),
-    );
+    await proc.process(job({ reminderId: 'r1', postId: 'p1', tenantId: 't1', channel: 'in_app' }));
     expect(findFirst).toHaveBeenCalledWith({
       where: { id: 'r1', tenantId: 't1' },
     });
@@ -67,9 +65,7 @@ describe('ReminderProcessor', () => {
     const { proc, findFirst, update, dispatcher } = setup({
       reminder: { id: 'r1', tenantId: 't1', status: 'scheduled', remindAt: new Date() },
     });
-    await proc.process(
-      job({ reminderId: 'r1', postId: 'p1', tenantId: 't2', channel: 'in_app' }),
-    );
+    await proc.process(job({ reminderId: 'r1', postId: 'p1', tenantId: 't2', channel: 'in_app' }));
     expect(findFirst).toHaveBeenCalledWith({
       where: { id: 'r1', tenantId: 't2' },
     });
@@ -86,7 +82,9 @@ describe('ReminderProcessor', () => {
   });
 
   it('is idempotent: skips a reminder already sent', async () => {
-    const { proc, update, dispatcher } = setup({ reminder: { id: 'r1', tenantId: 't1', status: 'sent', remindAt: new Date() } });
+    const { proc, update, dispatcher } = setup({
+      reminder: { id: 'r1', tenantId: 't1', status: 'sent', remindAt: new Date() },
+    });
     await proc.process(job({ reminderId: 'r1', postId: 'p1', tenantId: 't1', channel: 'in_app' }));
     expect(dispatcher.dispatch).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
@@ -104,9 +102,7 @@ describe('ReminderProcessor', () => {
     const { proc, update, dispatcher } = setup({
       buildPayload: jest.fn().mockRejectedValue(new Error('not approved')),
     });
-    await proc.process(
-      job({ reminderId: 'r1', postId: 'p1', tenantId: 't1', channel: 'in_app' }),
-    );
+    await proc.process(job({ reminderId: 'r1', postId: 'p1', tenantId: 't1', channel: 'in_app' }));
     expect(dispatcher.dispatch).not.toHaveBeenCalled();
     expect(update).toHaveBeenCalledWith({ where: { id: 'r1' }, data: { status: 'cancelled' } });
   });

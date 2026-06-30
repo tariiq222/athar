@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
+import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MoyasarClient } from './moyasar.client';
 import { PlanCode, PlanDefinition, resolvePlan } from '../config/billing-plans';
@@ -27,11 +28,7 @@ export class BillingService {
   // ---------------------------------------------------------------------------
   // 1) subscribe — build a Moyasar payment intent and return init params
   // ---------------------------------------------------------------------------
-  async createSubscriptionIntent(
-    ctx: TenantCtx,
-    planCode: PlanCode,
-    cycle: 'monthly' | 'annual',
-  ) {
+  async createSubscriptionIntent(ctx: TenantCtx, planCode: PlanCode, cycle: 'monthly' | 'annual') {
     const plan = resolvePlan(planCode);
     const priceMinor = cycle === 'annual' ? plan.annualPriceMinor : plan.priceMinor;
     const givenId = `sub:${ctx.tenantId}:${randomUUID()}`;
@@ -126,8 +123,7 @@ export class BillingService {
     // gross figure. Reject anything else with AMOUNT_MISMATCH (422).
     const cycle: 'monthly' | 'annual' = payment.metadata.cycle;
     const plan = resolvePlan(payment.metadata.plan_code ?? 'business');
-    const expectedExVat =
-      cycle === 'annual' ? plan.annualPriceMinor : plan.priceMinor;
+    const expectedExVat = cycle === 'annual' ? plan.annualPriceMinor : plan.priceMinor;
     const expectedInclusive =
       cycle === 'annual'
         ? Math.round(plan.annualPriceMinor * (1 + plan.vatRate))
@@ -166,11 +162,7 @@ export class BillingService {
 
       // Cheap pre-check — already active with a future period end → return
       // idempotent without taking the update path at all.
-      if (
-        sub.status === 'active' &&
-        sub.currentPeriodEnd &&
-        sub.currentPeriodEnd > new Date()
-      ) {
+      if (sub.status === 'active' && sub.currentPeriodEnd && sub.currentPeriodEnd > new Date()) {
         return { status: 'active' as const, subscriptionId: sub.id };
       }
 
@@ -239,7 +231,7 @@ export class BillingService {
   // stored-data contract.
   // ---------------------------------------------------------------------------
   private async nextInvoiceNumber(
-    tx: { invoice: { findFirst: (args: any) => Promise<{ number: string } | null> } },
+    tx: Pick<Prisma.TransactionClient, 'invoice'>,
     tenantId: string,
   ): Promise<string> {
     const prefix = this.config.get<string>('INVOICE_NUMBER_PREFIX') ?? 'INV';

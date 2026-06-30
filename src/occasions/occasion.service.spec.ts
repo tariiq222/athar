@@ -23,7 +23,7 @@ describe('OccasionService.list', () => {
         where: expect.objectContaining({
           AND: expect.arrayContaining([
             expect.objectContaining({ startDate: { lte: new Date('2026-09-30') } }),
-            expect.objectContaining({ endDate:   { gte: new Date('2026-09-01') } }),
+            expect.objectContaining({ endDate: { gte: new Date('2026-09-01') } }),
             expect.objectContaining({
               OR: expect.arrayContaining([
                 expect.objectContaining({ tenantId: null }),

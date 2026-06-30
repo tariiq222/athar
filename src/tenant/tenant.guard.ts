@@ -8,9 +8,7 @@ export class TenantGuard implements CanActivate {
   constructor(private readonly prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context
-      .switchToHttp()
-      .getRequest<{ tenantContext?: TenantContext }>();
+    const request = context.switchToHttp().getRequest<{ tenantContext?: TenantContext }>();
     const tc = request.tenantContext;
     if (!tc?.tenantId) throw unauthenticated();
     if (tc.userId) {

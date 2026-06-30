@@ -7,7 +7,8 @@ import { TenantGuard } from '../tenant/tenant.guard';
 const ctx = { userId: 'u1', tenantId: 't1' };
 
 async function buildCtrl(overrides: { list?: jest.Mock; patch?: jest.Mock }) {
-  const list = overrides.list ?? jest.fn().mockResolvedValue({ items: [], page: 1, pageSize: 20, total: 0 });
+  const list =
+    overrides.list ?? jest.fn().mockResolvedValue({ items: [], page: 1, pageSize: 20, total: 0 });
   const patch = overrides.patch ?? jest.fn().mockResolvedValue({ id: 'p1' });
   const moduleRef = await Test.createTestingModule({
     controllers: [PostController],
@@ -79,9 +80,17 @@ describe('PostController', () => {
 
   it('PATCH /posts/:id returns the PostDetail from the service', async () => {
     const detail = {
-      id: 'p1', tenantId: 't1', brandProfileId: 'b1', platform: 'x',
-      status: 'draft', text: 'updated', hashtags: [], scheduledAt: null,
-      createdAt: '2026-09-23T00:00:00.000Z', image: null, citations: [],
+      id: 'p1',
+      tenantId: 't1',
+      brandProfileId: 'b1',
+      platform: 'x',
+      status: 'draft',
+      text: 'updated',
+      hashtags: [],
+      scheduledAt: null,
+      createdAt: '2026-09-23T00:00:00.000Z',
+      image: null,
+      citations: [],
     };
     const patch = jest.fn().mockResolvedValue(detail);
     const { ctrl } = await buildCtrl({ patch });

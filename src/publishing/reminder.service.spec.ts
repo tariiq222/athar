@@ -5,11 +5,13 @@ function setup(overrides: { post?: any } = {}) {
   const reminderRows: any[] = [];
   const prisma = {
     post: {
-      findFirst: jest.fn().mockResolvedValue(
-        overrides.post === undefined
-          ? { id: 'p1', tenantId: 't1', scheduledAt: new Date('2999-01-01T00:00:00.000Z') }
-          : overrides.post,
-      ),
+      findFirst: jest
+        .fn()
+        .mockResolvedValue(
+          overrides.post === undefined
+            ? { id: 'p1', tenantId: 't1', scheduledAt: new Date('2999-01-01T00:00:00.000Z') }
+            : overrides.post,
+        ),
     },
     reminder: {
       create: jest.fn(async ({ data }: any) => {
@@ -23,8 +25,9 @@ function setup(overrides: { post?: any } = {}) {
         return row;
       }),
       findMany: jest.fn().mockResolvedValue(reminderRows),
-      findFirst: jest.fn(async ({ where }: any) =>
-        reminderRows.find((r) => r.id === where.id && r.tenantId === where.tenantId) ?? null,
+      findFirst: jest.fn(
+        async ({ where }: any) =>
+          reminderRows.find((r) => r.id === where.id && r.tenantId === where.tenantId) ?? null,
       ),
     },
   } as any;

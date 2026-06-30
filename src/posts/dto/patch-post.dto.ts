@@ -1,5 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsIn, IsISO8601, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsISO8601,
+  IsObject,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import type { PostStatus } from '../../generated/prisma/enums';
 
 const POST_STATUSES: PostStatus[] = ['draft', 'pending_review', 'approved', 'published'];

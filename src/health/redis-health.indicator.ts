@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  HealthCheckError,
-  HealthIndicator,
-  HealthIndicatorResult,
-} from '@nestjs/terminus';
+import { HealthCheckError, HealthIndicator, HealthIndicatorResult } from '@nestjs/terminus';
 import IORedis, { Redis } from 'ioredis';
 
 /**
@@ -20,10 +16,7 @@ import IORedis, { Redis } from 'ioredis';
  */
 @Injectable()
 export class RedisHealthIndicator extends HealthIndicator {
-  async pingCheck(
-    key: string,
-    options: { timeout?: number } = {},
-  ): Promise<HealthIndicatorResult> {
+  async pingCheck(key: string, options: { timeout?: number } = {}): Promise<HealthIndicatorResult> {
     const timeout = options.timeout ?? 1000;
     const host = process.env.REDIS_HOST ?? 'localhost';
     const port = Number(process.env.REDIS_PORT ?? 6379);
@@ -51,10 +44,7 @@ export class RedisHealthIndicator extends HealthIndicator {
       return result;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      throw new HealthCheckError(
-        'Redis ping failed',
-        this.getStatus(key, false, { message }),
-      );
+      throw new HealthCheckError('Redis ping failed', this.getStatus(key, false, { message }));
     } finally {
       client.disconnect();
     }

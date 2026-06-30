@@ -26,7 +26,7 @@ export class MarkPublishedService {
     if (post.status !== 'approved') throw invalidStatusTransition(post.status);
 
     // Cross-check via the state machine so the table stays the single source of truth.
-    this.stateMachine.assertTransition(post.status as any, {
+    this.stateMachine.assertTransition(post.status, {
       from: 'approved',
       to: 'published',
     });

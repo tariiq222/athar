@@ -8,9 +8,7 @@ function ctx(tenantContext?: unknown) {
   } as unknown as ExecutionContext;
 }
 
-function makePrisma(
-  userById: Record<string, { id: string; tenantId: string } | null> = {},
-): any {
+function makePrisma(userById: Record<string, { id: string; tenantId: string } | null> = {}): any {
   return {
     user: {
       findUnique: jest.fn(
@@ -24,9 +22,7 @@ describe('TenantGuard', () => {
   it('passes when user.tenantId matches context.tenantId', async () => {
     const prisma = makePrisma({ u1: { id: 'u1', tenantId: 't1' } });
     const guard = new TenantGuard(prisma);
-    await expect(
-      guard.canActivate(ctx({ userId: 'u1', tenantId: 't1' })),
-    ).resolves.toBe(true);
+    await expect(guard.canActivate(ctx({ userId: 'u1', tenantId: 't1' }))).resolves.toBe(true);
     expect(prisma.user.findUnique).toHaveBeenCalledWith({
       where: { id: 'u1' },
       select: { tenantId: true },
@@ -38,9 +34,7 @@ describe('TenantGuard', () => {
   it('rejects with TENANT_MISMATCH when user.tenantId differs from context.tenantId', async () => {
     const prisma = makePrisma({ u1: { id: 'u1', tenantId: 't_evil' } });
     const guard = new TenantGuard(prisma);
-    await expect(
-      guard.canActivate(ctx({ userId: 'u1', tenantId: 't1' })),
-    ).rejects.toMatchObject({
+    await expect(guard.canActivate(ctx({ userId: 'u1', tenantId: 't1' }))).rejects.toMatchObject({
       response: { error: 'TENANT_MISMATCH' },
       status: 403,
     });

@@ -14,9 +14,7 @@ import { TRIAL_EXPIRY_QUEUE } from './trial-expiry.processor';
  */
 @Injectable()
 export class BillingSchedulerService implements OnModuleInit {
-  constructor(
-    @InjectQueue(TRIAL_EXPIRY_QUEUE) private readonly trialExpiryQueue: Queue,
-  ) {}
+  constructor(@InjectQueue(TRIAL_EXPIRY_QUEUE) private readonly trialExpiryQueue: Queue) {}
 
   async onModuleInit(): Promise<void> {
     await this.trialExpiryQueue.add(

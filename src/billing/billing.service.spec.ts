@@ -63,10 +63,12 @@ describe('BillingService', () => {
     // Records each call into the shared `updates` array so tests can assert
     // that the past_due flip happened — the activate path uses updateMany,
     // these paths use update, but both write to the same observable store.
-    const subscriptionUpdate = opts.subscriptionUpdate ?? jest.fn(async (args: any) => {
-      updates.push(args);
-      return { id: args.where.id, ...args.data };
-    });
+    const subscriptionUpdate =
+      opts.subscriptionUpdate ??
+      jest.fn(async (args: any) => {
+        updates.push(args);
+        return { id: args.where.id, ...args.data };
+      });
 
     const prisma = {
       subscription: {
@@ -157,11 +159,7 @@ describe('BillingService', () => {
 
     it('uses annual priceMinor when cycle=annual', async () => {
       const { svc, moyasar } = makeSvc();
-      await svc.createSubscriptionIntent(
-        { tenantId: 't1', userId: 'u1' },
-        'business',
-        'annual',
-      );
+      await svc.createSubscriptionIntent({ tenantId: 't1', userId: 'u1' }, 'business', 'annual');
       const call = moyasar.createPaymentIntent.mock.calls[0][0];
       expect(call.amount).toBe(BUSINESS_PLAN.annualPriceMinor);
     });
@@ -202,9 +200,7 @@ describe('BillingService', () => {
       expect(activeUpdate).toBeDefined();
       expect(activeUpdate!.data.plan).toBe('business');
       expect(activeUpdate!.data.cancelAtPeriodEnd).toBe(false);
-      expect(new Date(activeUpdate!.data.currentPeriodEnd).getTime()).toBeGreaterThan(
-        Date.now(),
-      );
+      expect(new Date(activeUpdate!.data.currentPeriodEnd).getTime()).toBeGreaterThan(Date.now());
       // exactly one invoice, tenant-scoped, totalMinor matches payment.amount
       expect(invoices).toHaveLength(1);
       expect(invoices[0].tenantId).toBe('t1');
@@ -595,9 +591,9 @@ describe('BillingService', () => {
 
     it('throws when no subscription exists', async () => {
       const { svc } = makeSvc({ findFirst: jest.fn(async () => null) });
-      await expect(
-        svc.cancel({ tenantId: 't1', userId: 'u1' }),
-      ).rejects.toThrow(/no subscription/i);
+      await expect(svc.cancel({ tenantId: 't1', userId: 'u1' })).rejects.toThrow(
+        /no subscription/i,
+      );
     });
   });
 
@@ -728,9 +724,9 @@ describe('BillingService', () => {
 
     it('throws invoiceNotFound when invoice belongs to another tenant', async () => {
       const { svc, prisma } = makeSvc({ invoiceFindFirstMain: jest.fn(async () => null) });
-      await expect(
-        svc.getInvoice({ tenantId: 't1', userId: 'u1' }, 'inv_other'),
-      ).rejects.toThrow(/الفاتورة غير موجودة/);
+      await expect(svc.getInvoice({ tenantId: 't1', userId: 'u1' }, 'inv_other')).rejects.toThrow(
+        /الفاتورة غير موجودة/,
+      );
       // The WHERE includes tenantId — verify isolation at the query level
       const call = (prisma.invoice.findFirst as jest.Mock).mock.calls[0][0];
       expect(call.where.id).toBe('inv_other');

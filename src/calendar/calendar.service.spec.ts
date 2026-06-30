@@ -5,19 +5,59 @@ import { PostService } from '../posts/post.service';
 
 describe('CalendarService.get', () => {
   it('merges occasions and scheduled posts, sorted by date ascending', async () => {
-    const occasionRow = { id: 'o1', tenantId: null, slug: 'nat', kind: 'national', nameAr: 'اليوم الوطني', nameEn: 'Nat', startDate: '2026-09-23', endDate: '2026-09-23', hijriYear: 1448, gregorianYear: 2026 };
+    const occasionRow = {
+      id: 'o1',
+      tenantId: null,
+      slug: 'nat',
+      kind: 'national',
+      nameAr: 'اليوم الوطني',
+      nameEn: 'Nat',
+      startDate: '2026-09-23',
+      endDate: '2026-09-23',
+      hijriYear: 1448,
+      gregorianYear: 2026,
+    };
     const occasions = {
       list: jest.fn().mockResolvedValue([occasionRow]),
     };
     const postItems = [
-      { id: 'p1', platform: 'x', status: 'approved', scheduledAt: '2026-09-22T08:00:00.000Z', text: 'early post', hashtags: [], hasImage: false, citationCount: 0 },
-      { id: 'p2', platform: 'x', status: 'draft', scheduledAt: null, text: 'unscheduled', hashtags: [], hasImage: false, citationCount: 0 },
-      { id: 'p3', platform: 'linkedin', status: 'pending_review', scheduledAt: '2026-09-23T09:00:00.000Z', text: 'on the day', hashtags: [], hasImage: true, citationCount: 1 },
+      {
+        id: 'p1',
+        platform: 'x',
+        status: 'approved',
+        scheduledAt: '2026-09-22T08:00:00.000Z',
+        text: 'early post',
+        hashtags: [],
+        hasImage: false,
+        citationCount: 0,
+      },
+      {
+        id: 'p2',
+        platform: 'x',
+        status: 'draft',
+        scheduledAt: null,
+        text: 'unscheduled',
+        hashtags: [],
+        hasImage: false,
+        citationCount: 0,
+      },
+      {
+        id: 'p3',
+        platform: 'linkedin',
+        status: 'pending_review',
+        scheduledAt: '2026-09-23T09:00:00.000Z',
+        text: 'on the day',
+        hashtags: [],
+        hasImage: true,
+        citationCount: 1,
+      },
     ];
     const posts = {
       list: jest.fn().mockResolvedValue({
         items: postItems,
-        page: 1, pageSize: 100, total: 2,
+        page: 1,
+        pageSize: 100,
+        total: 2,
       }),
     };
     const moduleRef = await Test.createTestingModule({
@@ -32,9 +72,31 @@ describe('CalendarService.get', () => {
     const res = await svc.get('t1', { from: '2026-09-01', to: '2026-09-30' });
 
     expect(res).toEqual([
-      { type: 'post', date: '2026-09-22', post: { id: 'p1', platform: 'x', status: 'approved', scheduledAt: '2026-09-22T08:00:00.000Z', excerpt: 'early post', hasImage: false } },
+      {
+        type: 'post',
+        date: '2026-09-22',
+        post: {
+          id: 'p1',
+          platform: 'x',
+          status: 'approved',
+          scheduledAt: '2026-09-22T08:00:00.000Z',
+          excerpt: 'early post',
+          hasImage: false,
+        },
+      },
       { type: 'occasion', date: '2026-09-23', occasion: occasionRow },
-      { type: 'post', date: '2026-09-23', post: { id: 'p3', platform: 'linkedin', status: 'pending_review', scheduledAt: '2026-09-23T09:00:00.000Z', excerpt: 'on the day', hasImage: true } },
+      {
+        type: 'post',
+        date: '2026-09-23',
+        post: {
+          id: 'p3',
+          platform: 'linkedin',
+          status: 'pending_review',
+          scheduledAt: '2026-09-23T09:00:00.000Z',
+          excerpt: 'on the day',
+          hasImage: true,
+        },
+      },
     ]);
     expect(res.filter((e) => e.type === 'post')).toHaveLength(2); // unscheduled dropped
   });
@@ -44,15 +106,46 @@ describe('CalendarService.get', () => {
     //   - a.type === 'occasion' ? -1 : 1   (both branches, when both kinds on the same date)
     //   - a.occasion?.id ?? a.post?.id     (the .post?.id fallback when a is a post)
     //   - aId < bId ? -1 : aId > bId ? 1 : 0 (all three branches, two posts same date)
-    const occasionRow = { id: 'o1', tenantId: null, slug: 'nat', kind: 'national', nameAr: 'اليوم الوطني', nameEn: 'Nat', startDate: '2026-09-23', endDate: '2026-09-23', hijriYear: 1448, gregorianYear: 2026 };
+    const occasionRow = {
+      id: 'o1',
+      tenantId: null,
+      slug: 'nat',
+      kind: 'national',
+      nameAr: 'اليوم الوطني',
+      nameEn: 'Nat',
+      startDate: '2026-09-23',
+      endDate: '2026-09-23',
+      hijriYear: 1448,
+      gregorianYear: 2026,
+    };
     const occasions = { list: jest.fn().mockResolvedValue([occasionRow]) };
     const postItems = [
       // Two posts on the same date, in REVERSE id order, to force the
       // aId > bId branch in the tertiary key.
-      { id: 'p2', platform: 'x', status: 'approved', scheduledAt: '2026-09-23T10:00:00.000Z', text: 'second', hashtags: [], hasImage: false, citationCount: 0 },
-      { id: 'p1', platform: 'linkedin', status: 'pending_review', scheduledAt: '2026-09-23T09:00:00.000Z', text: 'first', hashtags: [], hasImage: true, citationCount: 0 },
+      {
+        id: 'p2',
+        platform: 'x',
+        status: 'approved',
+        scheduledAt: '2026-09-23T10:00:00.000Z',
+        text: 'second',
+        hashtags: [],
+        hasImage: false,
+        citationCount: 0,
+      },
+      {
+        id: 'p1',
+        platform: 'linkedin',
+        status: 'pending_review',
+        scheduledAt: '2026-09-23T09:00:00.000Z',
+        text: 'first',
+        hashtags: [],
+        hasImage: true,
+        citationCount: 0,
+      },
     ];
-    const posts = { list: jest.fn().mockResolvedValue({ items: postItems, page: 1, pageSize: 100, total: 2 }) };
+    const posts = {
+      list: jest.fn().mockResolvedValue({ items: postItems, page: 1, pageSize: 100, total: 2 }),
+    };
     const moduleRef = await Test.createTestingModule({
       providers: [
         CalendarService,
@@ -68,14 +161,38 @@ describe('CalendarService.get', () => {
       // Occasion sorts first (secondary key: occasion before post)
       { type: 'occasion', date: '2026-09-23', occasion: occasionRow },
       // Posts tie-broken by id ascending (p1 before p2)
-      { type: 'post', date: '2026-09-23', post: { id: 'p1', platform: 'linkedin', status: 'pending_review', scheduledAt: '2026-09-23T09:00:00.000Z', excerpt: 'first', hasImage: true } },
-      { type: 'post', date: '2026-09-23', post: { id: 'p2', platform: 'x', status: 'approved', scheduledAt: '2026-09-23T10:00:00.000Z', excerpt: 'second', hasImage: false } },
+      {
+        type: 'post',
+        date: '2026-09-23',
+        post: {
+          id: 'p1',
+          platform: 'linkedin',
+          status: 'pending_review',
+          scheduledAt: '2026-09-23T09:00:00.000Z',
+          excerpt: 'first',
+          hasImage: true,
+        },
+      },
+      {
+        type: 'post',
+        date: '2026-09-23',
+        post: {
+          id: 'p2',
+          platform: 'x',
+          status: 'approved',
+          scheduledAt: '2026-09-23T10:00:00.000Z',
+          excerpt: 'second',
+          hasImage: false,
+        },
+      },
     ]);
   });
 
   it('passes platform and kind filters through to the underlying services', async () => {
     const occasions = { list: jest.fn().mockResolvedValue([]) };
-    const posts = { list: jest.fn().mockResolvedValue({ items: [], page: 1, pageSize: 100, total: 0 }) };
+    const posts = {
+      list: jest.fn().mockResolvedValue({ items: [], page: 1, pageSize: 100, total: 0 }),
+    };
     const moduleRef = await Test.createTestingModule({
       providers: [
         CalendarService,
@@ -85,9 +202,21 @@ describe('CalendarService.get', () => {
     }).compile();
     const svc = moduleRef.get(CalendarService);
 
-    await svc.get('t1', { from: '2026-09-01', to: '2026-09-30', platform: 'linkedin', kind: 'national' });
+    await svc.get('t1', {
+      from: '2026-09-01',
+      to: '2026-09-30',
+      platform: 'linkedin',
+      kind: 'national',
+    });
 
-    expect(occasions.list).toHaveBeenCalledWith('t1', { from: '2026-09-01', to: '2026-09-30', kind: 'national' });
-    expect(posts.list).toHaveBeenCalledWith('t1', expect.objectContaining({ platform: 'linkedin' }));
+    expect(occasions.list).toHaveBeenCalledWith('t1', {
+      from: '2026-09-01',
+      to: '2026-09-30',
+      kind: 'national',
+    });
+    expect(posts.list).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ platform: 'linkedin' }),
+    );
   });
 });

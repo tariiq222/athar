@@ -236,10 +236,6 @@ export const securityViolation = (reason: string) =>
  * HTTP filter will translate it into the single flat envelope shape
  * `{ statusCode, error, message, fields? }` that all clients should handle.
  */
-export function validationError(
-  code: string,
-  message: string,
-  fields: string[] = [],
-): AppError {
+export function validationError(code: string, message: string, fields: string[] = []): AppError {
   return new AppError(422, code, message, fields);
 }

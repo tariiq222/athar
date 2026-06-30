@@ -10,9 +10,27 @@ function makePrismaMock() {
   const subscriptions: Row[] = [];
   const auditLogs: Row[] = [];
   const tx = {
-    tenant: { create: async ({ data }: any) => { const t = { id: 't' + (tenants.length + 1), ...data }; tenants.push(t); return t; } },
-    user: { create: async ({ data }: any) => { const u = { id: 'u' + (users.length + 1), ...data }; users.push(u); return u; } },
-    subscription: { create: async ({ data }: any) => { const s = { id: 's' + (subscriptions.length + 1), ...data }; subscriptions.push(s); return s; } },
+    tenant: {
+      create: async ({ data }: any) => {
+        const t = { id: 't' + (tenants.length + 1), ...data };
+        tenants.push(t);
+        return t;
+      },
+    },
+    user: {
+      create: async ({ data }: any) => {
+        const u = { id: 'u' + (users.length + 1), ...data };
+        users.push(u);
+        return u;
+      },
+    },
+    subscription: {
+      create: async ({ data }: any) => {
+        const s = { id: 's' + (subscriptions.length + 1), ...data };
+        subscriptions.push(s);
+        return s;
+      },
+    },
   };
   return {
     users,
@@ -35,7 +53,11 @@ function makePrismaMock() {
       },
     },
     auditLog: {
-      create: async ({ data }: any) => { const a = { id: 'a' + (auditLogs.length + 1), ...data }; auditLogs.push(a); return a; },
+      create: async ({ data }: any) => {
+        const a = { id: 'a' + (auditLogs.length + 1), ...data };
+        auditLogs.push(a);
+        return a;
+      },
     },
     $transaction: async (fn: any) => fn(tx),
   };
@@ -43,7 +65,14 @@ function makePrismaMock() {
 
 function makeService(prisma: any) {
   const config = {
-    get: (k: string) => ({ TRIAL_DURATION_DAYS: '7', JWT_ACCESS_SECRET: 'a', JWT_REFRESH_SECRET: 'r', JWT_ACCESS_TTL: '15m', JWT_REFRESH_TTL: '7d' }[k]),
+    get: (k: string) =>
+      ({
+        TRIAL_DURATION_DAYS: '7',
+        JWT_ACCESS_SECRET: 'a',
+        JWT_REFRESH_SECRET: 'r',
+        JWT_ACCESS_TTL: '15m',
+        JWT_REFRESH_TTL: '7d',
+      })[k],
   } as unknown as ConfigService;
   const passwords = new PasswordService();
   // Lightweight token service double with rotation-relevant behavior.

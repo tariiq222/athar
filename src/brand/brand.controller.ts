@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import type { BrandProfile } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../tenant/jwt-auth.guard';
@@ -49,10 +41,7 @@ export class BrandController {
 
   // FR-3: read the profile as a reference/context.
   @Get('profile/:id')
-  async get(
-    @Param('id') id: string,
-    @CurrentTenant() ctx: TenantContext,
-  ): Promise<BrandProfile> {
+  async get(@Param('id') id: string, @CurrentTenant() ctx: TenantContext): Promise<BrandProfile> {
     return this.findInTenantOr404(id, ctx.tenantId);
   }
 

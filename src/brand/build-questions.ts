@@ -24,7 +24,13 @@ export function buildQuestions(analysis: BrandAnalysisResult): ConfirmationQuest
   };
 
   const tone = scalarQuestion('tone', PROMPTS.tone, analysis.tone, lowConfidence, true);
-  const goals = scalarQuestion('goals', PROMPTS.goals, analysis.audience ? '' : '', lowConfidence, true);
+  const goals = scalarQuestion(
+    'goals',
+    PROMPTS.goals,
+    analysis.audience ? '' : '',
+    lowConfidence,
+    true,
+  );
   const prohibitions = listQuestion('prohibitions', PROMPTS.prohibitions, [], false);
   const competitors = listQuestion(
     'competitors',

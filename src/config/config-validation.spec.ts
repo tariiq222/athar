@@ -26,15 +26,13 @@ describe('validateConfig', () => {
   });
 
   it('throws when DATABASE_URL is missing', () => {
-    expect(() =>
-      validateConfig({ ...base, DATABASE_URL: undefined }),
-    ).toThrow(/DATABASE_URL/);
+    expect(() => validateConfig({ ...base, DATABASE_URL: undefined })).toThrow(/DATABASE_URL/);
   });
 
   it('throws when JWT_ACCESS_SECRET is shorter than 32 chars', () => {
-    expect(() =>
-      validateConfig({ ...base, JWT_ACCESS_SECRET: 'short' }),
-    ).toThrow(/JWT_ACCESS_SECRET.*min length/);
+    expect(() => validateConfig({ ...base, JWT_ACCESS_SECRET: 'short' })).toThrow(
+      /JWT_ACCESS_SECRET.*min length/,
+    );
   });
 
   it('throws when NODE_ENV=production and MOYASAR_WEBHOOK_SECRET is empty', () => {

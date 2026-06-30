@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../tenant/jwt-auth.guard';
 import { TenantGuard } from '../tenant/tenant.guard';
 import { CurrentTenant } from '../tenant/current-tenant.decorator';

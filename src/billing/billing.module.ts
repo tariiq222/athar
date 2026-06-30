@@ -9,10 +9,7 @@ import { BillingService } from './billing.service';
 import { BillingSchedulerService } from './billing-scheduler.service';
 import { MoyasarClient } from './moyasar.client';
 import { IdempotencyService } from './idempotency.service';
-import {
-  TRIAL_EXPIRY_QUEUE,
-  TrialExpiryProcessor,
-} from './trial-expiry.processor';
+import { TRIAL_EXPIRY_QUEUE, TrialExpiryProcessor } from './trial-expiry.processor';
 
 @Module({
   imports: [

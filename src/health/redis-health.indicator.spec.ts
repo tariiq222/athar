@@ -91,9 +91,9 @@ describe('RedisHealthIndicator.pingCheck', () => {
     mockConnect.mockReturnValue(new Promise(() => {}));
     // Use a very short timeout so the race resolves quickly in the test.
     const indicator = new RedisHealthIndicator();
-    await expect(
-      indicator.pingCheck('redis', { timeout: 1 }),
-    ).rejects.toBeInstanceOf(HealthCheckError);
+    await expect(indicator.pingCheck('redis', { timeout: 1 })).rejects.toBeInstanceOf(
+      HealthCheckError,
+    );
     expect(mockDisconnect).toHaveBeenCalledTimes(1);
   });
 

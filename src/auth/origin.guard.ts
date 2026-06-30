@@ -18,7 +18,10 @@ export class OriginGuard implements CanActivate {
   private readonly allowList: string[];
 
   constructor() {
-    this.allowList = (process.env.CORS_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+    this.allowList = (process.env.CORS_ORIGINS ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
 
   canActivate(context: ExecutionContext): boolean {

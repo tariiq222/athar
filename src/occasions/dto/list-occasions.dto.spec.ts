@@ -8,7 +8,9 @@ describe('ListOccasionsDto', () => {
   }
 
   function errorProps(raw: Record<string, unknown>): string[] {
-    return validate(raw).map((e) => e.property).sort();
+    return validate(raw)
+      .map((e) => e.property)
+      .sort();
   }
 
   // ---- happy paths --------------------------------------------------------
@@ -18,18 +20,9 @@ describe('ListOccasionsDto', () => {
   });
 
   it('accepts valid from/to with a known kind', () => {
-    const kinds = [
-      'national',
-      'foundation',
-      'ramadan',
-      'eid_fitr',
-      'eid_adha',
-      'commercial',
-    ];
+    const kinds = ['national', 'foundation', 'ramadan', 'eid_fitr', 'eid_adha', 'commercial'];
     for (const kind of kinds) {
-      expect(
-        validate({ from: '2026-01-01', to: '2026-12-31', kind }),
-      ).toHaveLength(0);
+      expect(validate({ from: '2026-01-01', to: '2026-12-31', kind })).toHaveLength(0);
     }
   });
 
@@ -65,9 +58,7 @@ describe('ListOccasionsDto', () => {
   });
 
   it('rejects unknown kind value', () => {
-    expect(
-      errorProps({ from: '2026-01-01', to: '2026-12-31', kind: 'holiday' }),
-    ).toContain('kind');
+    expect(errorProps({ from: '2026-01-01', to: '2026-12-31', kind: 'holiday' })).toContain('kind');
   });
 
   it('kind is optional — omitting it produces no error', () => {
