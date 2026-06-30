@@ -90,7 +90,7 @@ Every new `*.spec.ts` is in-process Jest unit test that lives next to the implem
 **Interfaces (depends on):** none
 **Produces:** `CsrfService.issue(): { token: string; cookieValue: string }` and `CsrfService.verify({ headerToken, cookieValue }): boolean` used by Task 6.
 
-- [ ] **Step 1.1: Add deps**
+- [x] **Step 1.1: Add deps**
 
 ```bash
 cd /Users/tariq/code/أثر
@@ -103,7 +103,7 @@ grep -E '"(cookie-parser|@types/cookie-parser)"' package.json
 ```
 Expected: two lines, both version-pinned.
 
-- [ ] **Step 1.2: Write failing test (RED) — `src/auth/csrf.service.spec.ts`**
+- [x] **Step 1.2: Write failing test (RED) — `src/auth/csrf.service.spec.ts`**
 
 ```ts
 import { CsrfService } from './csrf.service';
@@ -142,14 +142,14 @@ describe('CsrfService', () => {
 });
 ```
 
-- [ ] **Step 1.3: Run test, verify it fails**
+- [x] **Step 1.3: Run test, verify it fails**
 
 ```bash
 npx jest src/auth/csrf.service.spec.ts --no-coverage 2>&1 | tail -8
 ```
 Expected: `Cannot find module './csrf.service'` (module-not-found).
 
-- [ ] **Step 1.4: Minimal implementation — `src/auth/csrf.service.ts`**
+- [x] **Step 1.4: Minimal implementation — `src/auth/csrf.service.ts`**
 
 ```ts
 import { Injectable } from '@nestjs/common';
@@ -176,14 +176,14 @@ export class CsrfService {
 }
 ```
 
-- [ ] **Step 1.5: Run tests, verify pass**
+- [x] **Step 1.5: Run tests, verify pass**
 
 ```bash
 npx jest src/auth/csrf.service.spec.ts --no-coverage 2>&1 | tail -10
 ```
 Expected: `Tests: 5 passed, 5 total`.
 
-- [ ] **Step 1.6: Commit**
+- [x] **Step 1.6: Commit**
 
 ```bash
 git add package.json package-lock.json src/auth/csrf.service.ts src/auth/csrf.service.spec.ts
@@ -200,7 +200,7 @@ git commit -m "feat(auth): CSRF double-submit token service + cookie-parser dep"
 **Interfaces:** none (depends only on `process.env.CORS_ORIGINS`).
 **Produces:** `OriginGuard` registered as APP_GUARD in `app.module.ts` (Task 6 will do that).
 
-- [ ] **Step 2.1: Write failing test — `src/auth/origin.guard.spec.ts`**
+- [x] **Step 2.1: Write failing test — `src/auth/origin.guard.spec.ts`**
 
 ```ts
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
@@ -247,14 +247,14 @@ describe('OriginGuard', () => {
 });
 ```
 
-- [ ] **Step 2.2: Run, verify fail**
+- [x] **Step 2.2: Run, verify fail**
 
 ```bash
 npx jest src/auth/origin.guard.spec.ts --no-coverage 2>&1 | tail -8
 ```
 Expected: `Cannot find module './origin.guard'`.
 
-- [ ] **Step 2.3: Implementation — `src/auth/origin.guard.ts`**
+- [x] **Step 2.3: Implementation — `src/auth/origin.guard.ts`**
 
 ```ts
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
@@ -285,14 +285,14 @@ export class OriginGuard implements CanActivate {
 }
 ```
 
-- [ ] **Step 2.4: Run, verify pass**
+- [x] **Step 2.4: Run, verify pass**
 
 ```bash
 npx jest src/auth/origin.guard.spec.ts --no-coverage 2>&1 | tail -10
 ```
 Expected: `Tests: 5 passed, 5 total`.
 
-- [ ] **Step 2.5: Commit**
+- [x] **Step 2.5: Commit**
 
 ```bash
 git add src/auth/origin.guard.ts src/auth/origin.guard.spec.ts
@@ -312,7 +312,7 @@ git commit -m "feat(auth): OriginGuard for state-changing requests (defense-in-d
 - `SessionCookieService.clear(res)` removes the cookie on logout (used in future M2 task)
 - `SessionMiddleware` reads the cookie, calls `tokens.verifyAccess`, attaches `req.user = { sub, tenantId }` or `undefined`.
 
-- [ ] **Step 3.1: Write failing test — `src/auth/session-cookie.service.spec.ts`**
+- [x] **Step 3.1: Write failing test — `src/auth/session-cookie.service.spec.ts`**
 
 ```ts
 import { SessionCookieService } from './session-cookie.service';
@@ -359,14 +359,14 @@ describe('SessionCookieService', () => {
 });
 ```
 
-- [ ] **Step 3.2: Run, verify fail**
+- [x] **Step 3.2: Run, verify fail**
 
 ```bash
 npx jest src/auth/session-cookie.service.spec.ts --no-coverage 2>&1 | tail -8
 ```
 Expected: `Cannot find module`.
 
-- [ ] **Step 3.3: Implementation — `src/auth/session-cookie.service.ts`**
+- [x] **Step 3.3: Implementation — `src/auth/session-cookie.service.ts`**
 
 ```ts
 import { Injectable } from '@nestjs/common';
@@ -398,14 +398,14 @@ export class SessionCookieService {
 }
 ```
 
-- [ ] **Step 3.4: Run, verify pass**
+- [x] **Step 3.4: Run, verify pass**
 
 ```bash
 npx jest src/auth/session-cookie.service.spec.ts --no-coverage 2>&1 | tail -10
 ```
 Expected: `Tests: 4 passed, 4 total`.
 
-- [ ] **Step 3.5: Write failing test — `src/auth/session.middleware.spec.ts`**
+- [x] **Step 3.5: Write failing test — `src/auth/session.middleware.spec.ts`**
 
 ```ts
 import { SessionMiddleware } from './session.middleware';
@@ -452,13 +452,13 @@ describe('SessionMiddleware', () => {
 });
 ```
 
-- [ ] **Step 3.6: Run, verify fail**
+- [x] **Step 3.6: Run, verify fail**
 
 ```bash
 npx jest src/auth/session.middleware.spec.ts --no-coverage 2>&1 | tail -8
 ```
 
-- [ ] **Step 3.7: Implementation — `src/auth/session.middleware.ts`**
+- [x] **Step 3.7: Implementation — `src/auth/session.middleware.ts`**
 
 ```ts
 import { Injectable, NestMiddleware } from '@nestjs/common';
@@ -490,14 +490,14 @@ export class SessionMiddleware implements NestMiddleware {
 }
 ```
 
-- [ ] **Step 3.8: Run, verify pass**
+- [x] **Step 3.8: Run, verify pass**
 
 ```bash
 npx jest src/auth/session.middleware.spec.ts --no-coverage 2>&1 | tail -10
 ```
 Expected: `Tests: 3 passed, 3 total`.
 
-- [ ] **Step 3.9: Commit**
+- [x] **Step 3.9: Commit**
 
 ```bash
 git add src/auth/session-cookie.service.ts src/auth/session-cookie.service.spec.ts \
@@ -516,7 +516,7 @@ git commit -m "feat(auth): session cookie service + SessionMiddleware (req.user)
 **Interfaces:** depends on `SessionMiddleware` populating `req.user` (Task 3) and `PrismaService` (already exists).
 **Produces:** `AuthController.me(req)` returns `{ user: {...}, onboardingCompleted, subscriptionStatus, tenantId }`.
 
-- [ ] **Step 4.1: Add response type — `src/auth/auth.types.ts`** (modify — append)
+- [x] **Step 4.1: Add response type — `src/auth/auth.types.ts`** (modify — append)
 
 ```ts
 export type UserRole = 'owner' | 'admin' | 'editor' | 'viewer';
@@ -532,7 +532,7 @@ export interface SessionUser {
 
 (Add these to the bottom of the existing `src/auth/auth.types.ts`. Do NOT replace existing exports.)
 
-- [ ] **Step 4.2: Add `me()` to `AuthService` — `src/auth/auth.service.ts`** (modify — append method before `issueAndStore`)
+- [x] **Step 4.2: Add `me()` to `AuthService` — `src/auth/auth.service.ts`** (modify — append method before `issueAndStore`)
 
 ```ts
 import { SessionUser } from './auth.types';
@@ -572,7 +572,7 @@ async me(userId: string): Promise<SessionUser> {
 }
 ```
 
-- [ ] **Step 4.3: Add `@Get('me')` to controller — `src/auth/auth.controller.ts`** (modify)
+- [x] **Step 4.3: Add `@Get('me')` to controller — `src/auth/auth.controller.ts`** (modify)
 
 Add imports at top:
 ```ts
@@ -596,7 +596,7 @@ Add `unauthenticated` import at top of the file:
 import { unauthenticated } from '../common/errors/error-envelope';
 ```
 
-- [ ] **Step 4.4: Add e2e spec — `test/e2e/auth-me.spec.ts`**
+- [x] **Step 4.4: Add e2e spec — `test/e2e/auth-me.spec.ts`**
 
 ```ts
 import { Test } from '@nestjs/testing';
@@ -670,7 +670,7 @@ const e2e = process.env.E2E_BOOTSTRAP;
 });
 ```
 
-- [ ] **Step 4.5: Register SessionMiddleware in `src/auth/auth.module.ts`** (modify)
+- [x] **Step 4.5: Register SessionMiddleware in `src/auth/auth.module.ts`** (modify)
 
 Read `src/auth/auth.module.ts` first. Add `configure(consumer: MiddlewareConsumer)` method on the module class:
 
@@ -684,7 +684,7 @@ configure(consumer: MiddlewareConsumer): void {
 }
 ```
 
-- [ ] **Step 4.6: Run unit tests + e2e**
+- [x] **Step 4.6: Run unit tests + e2e**
 
 ```bash
 npx jest src/auth --no-coverage 2>&1 | tail -10
@@ -698,14 +698,14 @@ Expected: 2 passing tests under `GET /api/v1/auth/me`.
 
 If e2e fails because cookie-parser isn't wired in test bootstrap, confirm Step 4.5 applied SessionMiddleware AND the e2e spec imports it via `app.use(require('cookie-parser')())`. If still failing, ensure `cookie-parser` is mounted BEFORE the middleware via `app.use(...)` BEFORE `app.init()`.
 
-- [ ] **Step 4.7: Run full repo checks**
+- [x] **Step 4.7: Run full repo checks**
 
 ```bash
 npm run lint && npm run typecheck && npm test 2>&1 | tail -10
 ```
 Expected: 0 errors; existing tests still pass.
 
-- [ ] **Step 4.8: Commit**
+- [x] **Step 4.8: Commit**
 
 ```bash
 git add src/auth/auth.types.ts src/auth/auth.service.ts src/auth/auth.controller.ts \
@@ -723,14 +723,14 @@ git commit -m "feat(auth): GET /auth/me — SessionUser shape + SessionMiddlewar
 **Interfaces:** depends on `SessionCookieService` + `CsrfService` (Tasks 1 + 3).
 **Produces:** after `POST /auth/login` (etc.), response includes `Set-Cookie: session_token=...; csrf_token=...` AND JSON body has `csrfToken`.
 
-- [ ] **Step 5.1: Extend `AuthTokens` type — `src/auth/auth.types.ts`** (modify)
+- [x] **Step 5.1: Extend `AuthTokens` type — `src/auth/auth.types.ts`** (modify)
 
 Add an OPTIONAL field at the end of the existing `AuthTokens` interface (do NOT change existing fields):
 ```ts
 csrfToken?: string;
 ```
 
-- [ ] **Step 5.2: Inject services into `AuthController` — `src/auth/auth.controller.ts`** (modify)
+- [x] **Step 5.2: Inject services into `AuthController` — `src/auth/auth.controller.ts`** (modify)
 
 Replace the constructor and add a setter helper at the top of the class:
 ```ts
@@ -767,7 +767,7 @@ import { CsrfService } from './csrf.service';
 import type { Response } from 'express';
 ```
 
-- [ ] **Step 5.3: Wire handlers — same file** (modify each POST handler)
+- [x] **Step 5.3: Wire handlers — same file** (modify each POST handler)
 
 For each of `register`, `login`, `refresh`:
 ```ts
@@ -819,9 +819,9 @@ async login(
 
 Apply the same pattern to `register` and `refresh`.
 
-- [ ] **Step 5.4: Wire `CsrfService` + `SessionCookieService` in `src/auth/auth.module.ts`** — add to the module's `providers` array (and `exports` if needed). They are needed by the controller, so add to providers.
+- [x] **Step 5.4: Wire `CsrfService` + `SessionCookieService` in `src/auth/auth.module.ts`** — add to the module's `providers` array (and `exports` if needed). They are needed by the controller, so add to providers.
 
-- [ ] **Step 5.5: Write integration unit — `src/auth/auth.controller.spec.ts`** (extend existing file)
+- [x] **Step 5.5: Write integration unit — `src/auth/auth.controller.spec.ts`** (extend existing file)
 
 Add a single test using NestJS `Test.createTestingModule`:
 
@@ -864,7 +864,7 @@ describe('AuthController (cookies)', () => {
 });
 ```
 
-- [ ] **Step 5.6: Run tests**
+- [x] **Step 5.6: Run tests**
 
 ```bash
 npx jest src/auth/auth.controller.spec.ts --no-coverage 2>&1 | tail -10
@@ -872,7 +872,7 @@ npm run lint && npm run typecheck
 ```
 Expected: spec passes; 0 lint errors.
 
-- [ ] **Step 5.7: Commit**
+- [x] **Step 5.7: Commit**
 
 ```bash
 git add src/auth/auth.controller.ts src/auth/auth.controller.spec.ts src/auth/auth.types.ts \
@@ -891,7 +891,7 @@ git commit -m "feat(auth): login/register/refresh set session + csrf cookies"
 **Interfaces:** depends on `CsrfService` (Task 1) + OriginGuard already wired.
 **Produces:** all `POST/PATCH/DELETE` requests MUST pass the CSRF check (cookie == header) unless they are on the cookie-issuing endpoints (`/auth/login`, `/auth/register`, `/auth/refresh`). `/auth/csrf` issues the CSRF cookie for clients that need to mint it before login.
 
-- [ ] **Step 6.1: Add cookie-parser to main.ts — `src/main.ts`** (modify)
+- [x] **Step 6.1: Add cookie-parser to main.ts — `src/main.ts`** (modify)
 
 After `app.use(helmet());`, add:
 ```ts
@@ -902,7 +902,7 @@ app.use(cookieParser());
 
 (Read the file first to know the current import layout, then add the import + the `app.use(cookieParser())` line directly after `helmet()`.)
 
-- [ ] **Step 6.2: Create `CsrfGuard` — `src/auth/csrf.guard.ts`**
+- [x] **Step 6.2: Create `CsrfGuard` — `src/auth/csrf.guard.ts`**
 
 ```ts
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
@@ -941,7 +941,7 @@ export class CsrfGuard implements CanActivate {
 }
 ```
 
-- [ ] **Step 6.3: Create `/auth/csrf` controller — `src/auth/csrf.controller.ts`**
+- [x] **Step 6.3: Create `/auth/csrf` controller — `src/auth/csrf.controller.ts`**
 
 ```ts
 import { Controller, Get, Res } from '@nestjs/common';
@@ -964,7 +964,7 @@ export class CsrfController {
 }
 ```
 
-- [ ] **Step 6.4: Register global guards — `src/app.module.ts`** (modify)
+- [x] **Step 6.4: Register global guards — `src/app.module.ts`** (modify)
 
 Add to the `providers` array:
 ```ts
@@ -978,9 +978,9 @@ import { OriginGuard } from './auth/origin.guard';
 ```
 Note: NestJS runs guards in registration order. Origin first, then CSRF. Both short-circuit before controllers run, so neither touches per-request state.
 
-- [ ] **Step 6.5: Declare `CsrfController` in `src/auth/auth.module.ts`** — add to `controllers` array.
+- [x] **Step 6.5: Declare `CsrfController` in `src/auth/auth.module.ts`** — add to `controllers` array.
 
-- [ ] **Step 6.6: Add e2e spec — `test/e2e/csrf.spec.ts`**
+- [x] **Step 6.6: Add e2e spec — `test/e2e/csrf.spec.ts`**
 
 ```ts
 const e2e = process.env.E2E_BOOTSTRAP;
@@ -1037,21 +1037,21 @@ const e2e = process.env.E2E_BOOTSTRAP;
 
 Add the `describe.skip` wrapper so the spec doesn't break test runs that don't set `E2E_BOOTSTRAP=1`.
 
-- [ ] **Step 6.7: Run e2e**
+- [x] **Step 6.7: Run e2e**
 
 ```bash
 E2E_BOOTSTRAP=1 npx jest test/e2e/csrf.spec.ts --no-coverage 2>&1 | tail -15
 ```
 Expected: 3 passing tests.
 
-- [ ] **Step 6.8: Run full repo checks**
+- [x] **Step 6.8: Run full repo checks**
 
 ```bash
 npm run lint && npm run typecheck && npm test 2>&1 | tail -10
 ```
 Expected: 0 errors; existing 277 tests still pass.
 
-- [ ] **Step 6.9: Commit**
+- [x] **Step 6.9: Commit**
 
 ```bash
 git add src/auth/csrf.guard.ts src/auth/csrf.controller.ts src/auth/csrf.controller.spec.ts \
@@ -1064,7 +1064,7 @@ git commit -m "feat(auth): global CsrfGuard + OriginGuard + GET /auth/csrf + e2e
 
 ## Task 7: Final checks + merge to main
 
-- [ ] **Step 7.1: Run all checks**
+- [x] **Step 7.1: Run all checks**
 
 ```bash
 npm run lint && npm run typecheck && npm test 2>&1 | tail -5
