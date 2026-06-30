@@ -6,6 +6,8 @@ import { MoyasarClient } from './moyasar.client';
 import { PlanCode, PlanDefinition, resolvePlan } from '../config/billing-plans';
 import { MoyasarPayment, MoyasarWebhookEvent } from './billing.types';
 import { amountMismatch, invoiceNotFound, paymentFailed } from '../common/errors/error-envelope';
+import { addMs, startOfMonth } from '../common/date';
+import { latestSubscription } from '../common/subscription';
 
 export interface TenantCtx {
   tenantId: string;
@@ -83,10 +85,10 @@ export class BillingService {
       // authentication; if the secret leaks, an attacker could freeze any
       // tenant by emitting a forged payment_failed. Acceptable per spec
       // (secret lives in secrets manager).
-      const sub = await this.prisma.subscription.findFirst({
-        where: { tenantId: ctx.tenantId },
-        orderBy: { createdAt: 'desc' },
-      });
+      const sub = await latestSubscription<{ id: string; status: string }>(
+        this.prisma,
+        ctx.tenantId,
+      );
       if (sub && (sub.status === 'trialing' || sub.status === 'active')) {
         await this.prisma.subscription.update({
           where: { id: sub.id },
@@ -155,10 +157,11 @@ export class BillingService {
 
     // Atomic: subscription update + invoice creation. Idempotent on replay.
     return this.prisma.$transaction(async (tx) => {
-      const sub = await tx.subscription.findFirst({
-        where: { tenantId: ctx.tenantId },
-        orderBy: { createdAt: 'desc' },
-      });
+      const sub = await latestSubscription<{
+        id: string;
+        status: string;
+        currentPeriodEnd: Date | null;
+      }>(tx, ctx.tenantId);
       if (!sub) throw new Error('no subscription');
 
       // Cheap pre-check — already active with a future period end → return
@@ -171,7 +174,7 @@ export class BillingService {
         return { status: 'active' as const, subscriptionId: sub.id };
       }
 
-      const periodEnd = new Date(Date.now() + PERIOD_MS);
+      const periodEnd = addMs(Date.now(), PERIOD_MS);
       // updateMany (not update) — the `where` excludes rows that are already
       // 'active'. This closes the TOCTOU between the read above and the write:
       // if a concurrent webhook retry already flipped this row to 'active' in
@@ -206,7 +209,7 @@ export class BillingService {
           vatRate: plan.vatRate,
           taxableAmountMinor: subtotalMinor,
           legalBasis: 'contract',
-          retentionUntil: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
+          retentionUntil: addMs(Date.now(), 10 * 365 * 24 * 60 * 60 * 1000),
           sellerName: this.config.get<string>('SELLER_NAME') ?? 'أثر',
           buyerName: tenant?.name ?? 'Customer',
         },
@@ -261,9 +264,8 @@ export class BillingService {
   // period they already paid for.
   // ---------------------------------------------------------------------------
   async cancel(ctx: TenantCtx) {
-    const sub = await this.prisma.subscription.findFirst({
-      where: { tenantId: ctx.tenantId, status: { not: 'canceled' } },
-      orderBy: { createdAt: 'desc' },
+    const sub = await latestSubscription<{ id: string }>(this.prisma, ctx.tenantId, {
+      extraWhere: { status: { not: 'canceled' } },
     });
     if (!sub) throw new Error('no subscription');
     const updated = await this.prisma.subscription.update({
@@ -277,28 +279,26 @@ export class BillingService {
   // 5) getSubscription — status + plan + per-kind usage counts vs caps.
   // ---------------------------------------------------------------------------
   async getSubscription(ctx: TenantCtx) {
-    const sub = await this.prisma.subscription.findFirst({
-      where: { tenantId: ctx.tenantId },
-      orderBy: { createdAt: 'desc' },
-    });
+    const sub = await latestSubscription<{
+      plan: string;
+      status: string;
+      trialEndsAt: Date | null;
+      currentPeriodEnd: Date | null;
+    }>(this.prisma, ctx.tenantId);
     const plan: PlanDefinition = resolvePlan(sub?.plan ?? 'trial');
-    const startOfMonth = new Date(
-      new Date().getFullYear(),
-      new Date().getMonth(),
-      1,
-    );
+    const monthStart = startOfMonth();
     const [drafts, images, searches] = await Promise.all([
       this.prisma.usageRecord.aggregate({
         _sum: { units: true },
-        where: { tenantId: ctx.tenantId, kind: 'text', createdAt: { gte: startOfMonth } },
+        where: { tenantId: ctx.tenantId, kind: 'text', createdAt: { gte: monthStart } },
       }),
       this.prisma.usageRecord.aggregate({
         _sum: { units: true },
-        where: { tenantId: ctx.tenantId, kind: 'image', createdAt: { gte: startOfMonth } },
+        where: { tenantId: ctx.tenantId, kind: 'image', createdAt: { gte: monthStart } },
       }),
       this.prisma.usageRecord.aggregate({
         _sum: { units: true },
-        where: { tenantId: ctx.tenantId, kind: 'search', createdAt: { gte: startOfMonth } },
+        where: { tenantId: ctx.tenantId, kind: 'search', createdAt: { gte: monthStart } },
       }),
     ]);
     return {

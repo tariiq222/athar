@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
@@ -22,6 +22,8 @@ import { ObservabilityModule } from './observability/observability.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { buildValidationPipe } from './common/dto-validation';
 import { validateConfig } from './config/config-validation';
+import { OriginGuard } from './auth/origin.guard';
+import { CsrfGuard } from './auth/csrf.guard';
 
 @Module({
   imports: [
@@ -87,6 +89,12 @@ import { validateConfig } from './config/config-validation';
   providers: [
     { provide: APP_PIPE, useFactory: buildValidationPipe },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
+    // auth-session-hardening: global guards on every mutation. Origin runs
+    // first (rejects mutations whose Origin isn't allow-listed), then CSRF
+    // (double-submit cookie == X-CSRF-Token header). Both short-circuit before
+    // the controller. Registration order is execution order in NestJS.
+    { provide: APP_GUARD, useClass: OriginGuard },
+    { provide: APP_GUARD, useClass: CsrfGuard },
   ],
 })
 export class AppModule {}

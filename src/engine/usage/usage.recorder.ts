@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlanDefinition, resolvePlan } from '../../config/billing-plans';
+import { kindLabel } from '../../common/usage-labels';
+import { startOfMonth } from '../../common/date';
+import { latestSubscription } from '../../common/subscription';
 
 export interface UsageInput {
   tenantId: string;
@@ -60,10 +63,7 @@ export class UsageRecorder {
    * tenant may not have a row yet).
    */
   async getCurrentPlan(tenantId: string): Promise<PlanDefinition> {
-    const sub = await this.prisma.subscription.findFirst({
-      where: { tenantId },
-      orderBy: { createdAt: 'desc' },
-    });
+    const sub = await latestSubscription<{ plan: string }>(this.prisma, tenantId);
     if (!sub) return resolvePlan('trial');
     return resolvePlan(sub.plan);
   }
@@ -80,10 +80,7 @@ export class UsageRecorder {
     kind: 'text' | 'image' | 'image_verify' | 'search',
     planDef: PlanDefinition,
   ): Promise<ConsumeDecision> {
-    const sub = (await this.prisma.subscription.findFirst({
-      where: { tenantId },
-      orderBy: { createdAt: 'desc' },
-    })) as SubscriptionRow | null;
+    const sub = await latestSubscription<SubscriptionRow>(this.prisma, tenantId);
 
     const status = sub?.status ?? 'trialing';
 
@@ -121,15 +118,15 @@ export class UsageRecorder {
       } as const
     )[kind];
 
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const monthStart = startOfMonth();
     const agg = await this.prisma.usageRecord.aggregate({
       _sum: { units: true },
-      where: { tenantId, kind, createdAt: { gte: startOfMonth } },
+      where: { tenantId, kind, createdAt: { gte: monthStart } },
     });
     const used = agg._sum.units ?? 0;
 
     if (used >= cap) {
-      const kindAr = { text: 'المسودّات', image: 'الصور', image_verify: 'الصور', search: 'عمليات البحث' }[kind];
+      const kindAr = kindLabel(kind);
       return {
         allowed: false,
         used,

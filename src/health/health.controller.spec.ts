@@ -66,5 +66,40 @@ describe('HealthController', () => {
       const ctrl = moduleRef.get(HealthController);
       await expect(ctrl.ready()).rejects.toThrow();
     });
+
+    it('reports down when DB pingCheck throws (Prisma unavailable)', async () => {
+      const brokenPrisma = {
+        $runCommandRaw: () => {
+          throw new Error('Use the mongodb provider');
+        },
+        // Simulate a DB connection failure on the SQL fallback path.
+        $queryRawUnsafe: jest
+          .fn()
+          .mockRejectedValue(new Error('connection refused')),
+      };
+      const moduleRef = await Test.createTestingModule({
+        imports: [TerminusModule],
+        controllers: [HealthController],
+        providers: [
+          { provide: PrismaService, useValue: brokenPrisma },
+          {
+            provide: RedisHealthIndicator,
+            useValue: {
+              pingCheck: jest
+                .fn()
+                .mockResolvedValue({ redis: { status: 'up' } }),
+            },
+          },
+        ],
+      }).compile();
+      const ctrl = moduleRef.get(HealthController);
+      await expect(ctrl.ready()).rejects.toThrow();
+    });
+
+    it('live endpoint is independent — returns ok even when dependencies are unreachable', () => {
+      // Direct instantiation — no DI needed; live() has no async deps.
+      const ctrl = Object.create(HealthController.prototype);
+      expect(ctrl.live()).toEqual({ status: 'ok' });
+    });
   });
 });

@@ -57,21 +57,23 @@ export function decideMethod(rate: number): GateDecision {
 }
 
 /**
- * Real-call harness entry point. Not unit-tested — run manually:
- *   OPENROUTER_API_KEY=... npx ts-node src/engine/image/image-gate.ts
+ * Real-call harness entry point. The implementation lives in
+ * `./image-gate.runner` (`runImageGate`), which is dependency-injected so it
+ * can be unit-tested with mocked provider + verifier and never makes a real
+ * network call by itself. To run the gate against real images, wire the
+ * OpenAI-backed `OpenAiImageClient` + `VisionVerifier` into `runImageGate`
+ * from a manual script. See docs/decisions/image-gate.md for the procedure.
  *
- * Generates 20 sample generations on GPT-5-image, reads each back with
- * a vision model, computes the breakage rate, prints the decision.
+ * @deprecated Call `runImageGate(options)` from `./image-gate.runner` directly.
  */
 export async function runGate(): Promise<{
   decision: GateDecision;
   samples: GateSample[];
   rate: number;
 }> {
-  // Stub: the actual implementation lives in image-gate.runner.ts (not committed
-  // to keep tests offline). See README in src/engine/image for the manual recipe.
   throw new Error(
-    'runGate() must be invoked via the manual harness (src/engine/image/image-gate.runner.ts). ' +
+    'runGate() is superseded by runImageGate() in src/engine/image/image-gate.runner.ts. ' +
+      'Wire a real GateImageGenerator + GateVisionVerifier and call runImageGate({...}). ' +
       'See docs/decisions/image-gate.md for the procedure.',
   );
 }

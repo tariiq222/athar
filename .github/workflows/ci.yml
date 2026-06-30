@@ -22,6 +22,10 @@ env:
   # DB / Redis (port 5432/6379 are the CI service port mapping; GitHub Actions
   # services are reachable on localhost).
   DATABASE_URL: postgresql://athar:athar@localhost:5432/athar?schema=public
+  # Shadow DB for `prisma migrate diff --from-migrations` (Prisma 7 refuses
+  # to use the same DB as the main one). postgres-shadow service exposes
+  # port 5433 → 5432 internally; we connect to localhost:5433.
+  SHADOW_DATABASE_URL: postgresql://athar:athar@localhost:5433/athar_shadow?schema=public
   REDIS_HOST: localhost
   REDIS_PORT: '6379'
   # JWT — ≥32 chars to satisfy Zod min(32) check.
@@ -79,6 +83,20 @@ jobs:
         options: >-
           --health-cmd pg_isready --health-interval 10s
           --health-timeout 5s --health-retries 5
+      # Required by `prisma migrate diff --from-migrations` (the drift check in
+      # the lint + typecheck + test job). Prisma 7 refuses to use the same
+      # connection as the main DB for shadowing; provision a second DB on
+      # a separate port.
+      postgres-shadow:
+        image: postgres:16
+        env:
+          POSTGRES_USER: athar
+          POSTGRES_PASSWORD: athar
+          POSTGRES_DB: athar_shadow
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
       redis:
         image: redis:7
         ports: ["6379:6379"]
@@ -86,13 +104,17 @@ jobs:
           --health-cmd "redis-cli ping" --health-interval 10s
           --health-timeout 5s --health-retries 5
       minio:
-        image: minio/minio
+        image: minio/minio:latest
         env:
           MINIO_ROOT_USER: athar
           MINIO_ROOT_PASSWORD: athar12345
         ports: ["9000:9000", "9001:9001"]
+        # MinIO image no longer auto-starts `server /data` on bare invocation
+        # in recent tags — pass the command explicitly so the container becomes
+        # healthy for downstream jobs. See Task 12.1 follow-up commit.
+        command: server /data --console-address :9001
         options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-cmd "curl -fsS http://localhost:9000/minio/health/live || exit 1"
           --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - name: Checkout
@@ -124,17 +146,27 @@ jobs:
 
       - name: Prisma schema-drift check
         run: |
-          set -e
-          diff_output=$(npx prisma migrate diff \
-            --from-migrations prisma/migrations \
-            --to-schema-datamodel prisma/schema.prisma \
-            --script)
-          if [ -n "$diff_output" ]; then
-            echo "Schema drift detected — migrations out of sync with schema.prisma:"
-            echo "$diff_output"
+          # `--exit-code` returns 0 when migrations == schema (in sync),
+          # 1 on Prisma error, 2 when there is SQL drift. We use that as the
+          # source of truth instead of string-matching `--script` output
+          # (which prints "-- This is an empty migration." even when in
+          # sync, causing a false-positive drift).
+          if npx prisma migrate diff \
+              --from-migrations prisma/migrations \
+              --to-schema prisma/schema.prisma \
+              --exit-code; then
+            echo "No schema drift."
+          else
+            rc=$?
+            echo "::group::Drift SQL"
+            npx prisma migrate diff \
+              --from-migrations prisma/migrations \
+              --to-schema prisma/schema.prisma \
+              --script
+            echo "::endgroup::"
+            echo "Schema drift detected (exit code $rc) — migrations out of sync with schema.prisma."
             exit 1
           fi
-          echo "No schema drift."
 
   # ---------------------------------------------------------------
   # Job 2: build (sanity — NestJS compiles cleanly)
@@ -178,6 +210,20 @@ jobs:
         options: >-
           --health-cmd pg_isready --health-interval 10s
           --health-timeout 5s --health-retries 5
+      # Required by `prisma migrate diff --from-migrations` (the drift check in
+      # the lint + typecheck + test job). Prisma 7 refuses to use the same
+      # connection as the main DB for shadowing; provision a second DB on
+      # a separate port.
+      postgres-shadow:
+        image: postgres:16
+        env:
+          POSTGRES_USER: athar
+          POSTGRES_PASSWORD: athar
+          POSTGRES_DB: athar_shadow
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
       redis:
         image: redis:7
         ports: ["6379:6379"]
@@ -185,13 +231,17 @@ jobs:
           --health-cmd "redis-cli ping" --health-interval 10s
           --health-timeout 5s --health-retries 5
       minio:
-        image: minio/minio
+        image: minio/minio:latest
         env:
           MINIO_ROOT_USER: athar
           MINIO_ROOT_PASSWORD: athar12345
         ports: ["9000:9000", "9001:9001"]
+        # MinIO image no longer auto-starts `server /data` on bare invocation
+        # in recent tags — pass the command explicitly so the container becomes
+        # healthy for downstream jobs. See Task 12.1 follow-up commit.
+        command: server /data --console-address :9001
         options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-cmd "curl -fsS http://localhost:9000/minio/health/live || exit 1"
           --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - name: Checkout

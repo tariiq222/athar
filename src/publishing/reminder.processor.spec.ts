@@ -1,18 +1,28 @@
 import { ReminderProcessor } from './reminder.processor';
 
 function setup(
-  opts: { reminder?: any; buildPayload?: jest.Mock; dispatch?: jest.Mock } = {},
+  opts: {
+    reminder?: any;
+    buildPayload?: jest.Mock;
+    dispatch?: jest.Mock;
+    tenantId?: string;
+  } = {},
 ) {
   const update = jest.fn().mockResolvedValue({});
+  const reminder =
+    opts.reminder === undefined
+      ? { id: 'r1', tenantId: opts.tenantId ?? 't1', status: 'scheduled', remindAt: new Date() }
+      : opts.reminder;
+  // findFirst now carries a { id, tenantId } predicate; the mock honors the
+  // tenantId so a cross-tenant reminderId resolves to null (dropped silently).
+  const findFirst = jest.fn().mockImplementation(({ where }: any) => {
+    if (reminder && where.tenantId === reminder.tenantId && where.id === reminder.id) {
+      return Promise.resolve(reminder);
+    }
+    return Promise.resolve(null);
+  });
   const prisma = {
-    reminder: {
-      findUnique: jest
-        .fn()
-        .mockResolvedValue(
-          opts.reminder === undefined ? { id: 'r1', status: 'scheduled', remindAt: new Date() } : opts.reminder,
-        ),
-      update,
-    },
+    reminder: { findFirst, update },
   } as any;
   const exportSvc = {
     buildPayload:
@@ -31,22 +41,40 @@ function setup(
     dispatch: opts.dispatch ?? jest.fn().mockResolvedValue({ delivered: true }),
   } as any;
   const proc = new ReminderProcessor(prisma, exportSvc, dispatcher);
-  return { proc, prisma, update, exportSvc, dispatcher };
+  return { proc, prisma, findFirst, update, exportSvc, dispatcher };
 }
 
 const job = (data: any) => ({ data } as any);
 
 describe('ReminderProcessor', () => {
   it('delivers and marks the reminder sent', async () => {
-    const { proc, update, dispatcher } = setup();
+    const { proc, findFirst, update, dispatcher } = setup();
     await proc.process(
       job({ reminderId: 'r1', postId: 'p1', tenantId: 't1', channel: 'in_app' }),
     );
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { id: 'r1', tenantId: 't1' },
+    });
     expect(dispatcher.dispatch).toHaveBeenCalledWith(
       'in_app',
       expect.objectContaining({ tenantId: 't1', postId: 'p1' }),
     );
     expect(update).toHaveBeenCalledWith({ where: { id: 'r1' }, data: { status: 'sent' } });
+  });
+
+  it('drops a reminder belonging to another tenant (no cross-tenant delivery)', async () => {
+    // Reminder is owned by t1, but the job carries tenantId t2 (forged/stale).
+    const { proc, findFirst, update, dispatcher } = setup({
+      reminder: { id: 'r1', tenantId: 't1', status: 'scheduled', remindAt: new Date() },
+    });
+    await proc.process(
+      job({ reminderId: 'r1', postId: 'p1', tenantId: 't2', channel: 'in_app' }),
+    );
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { id: 'r1', tenantId: 't2' },
+    });
+    expect(dispatcher.dispatch).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
   });
 
   it('marks failed when the channel does not deliver (no throw)', async () => {
@@ -58,7 +86,7 @@ describe('ReminderProcessor', () => {
   });
 
   it('is idempotent: skips a reminder already sent', async () => {
-    const { proc, update, dispatcher } = setup({ reminder: { id: 'r1', status: 'sent', remindAt: new Date() } });
+    const { proc, update, dispatcher } = setup({ reminder: { id: 'r1', tenantId: 't1', status: 'sent', remindAt: new Date() } });
     await proc.process(job({ reminderId: 'r1', postId: 'p1', tenantId: 't1', channel: 'in_app' }));
     expect(dispatcher.dispatch).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();

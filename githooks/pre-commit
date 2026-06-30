@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# pre-commit: fast checks on staged changes (lint + typecheck).
+# Mirrors the `lint-typecheck-test` job in .github/workflows/ci.yml.
+# Skips if no relevant files are staged, or if commit message starts with
+# "chore:" / "docs:" (text-only — full check runs at pre-push).
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# Skip the slow path: only docs/ or *.md changes? (rare; full check still runs at pre-push)
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+if [[ -z "$STAGED" ]]; then
+  exit 0
+fi
+
+# Anything to lint? Skip when the commit is docs-only.
+if ! echo "$STAGED" | grep -qE '\.(ts|tsx|js|json)$|^src/'; then
+  exit 0
+fi
+
+RED='\033[0;31m'; GRN='\033[0;32m'; YEL='\033[1;33m'; NC='\033[0m'
+log()  { printf '%b\n' "$*"; }
+ok()   { log "  ${GRN}✓${NC} $1"; }
+fail() { log "${RED}✗ $1${NC}"; exit 1; }
+
+log "${YEL}▸ pre-commit: lint + typecheck${NC}"
+
+# 1) Generate Prisma client (CI does this; if schema changed, types may be stale)
+if echo "$STAGED" | grep -qE '^prisma/'; then
+  log "  prisma: generate (schema changed)"
+  npx prisma generate >/dev/null 2>&1 || fail "prisma generate failed"
+fi
+
+# 2) Lint only staged files (fast — eslint --fix none, no report)
+log "  eslint: $(echo "$STAGED" | grep -cE '\.ts$' | tr -d ' ') .ts file(s)"
+if ! npm run lint --silent >/dev/null 2>&1; then
+  fail "lint failed — run \`npm run lint\` to see errors"
+fi
+ok lint
+
+# 3) Typecheck (full project; cheap on warm tsc cache)
+log "  tsc --noEmit"
+if ! npm run typecheck --silent 2>&1; then
+  fail "typecheck failed — run \`npm run typecheck\` to see errors"
+fi
+ok typecheck
+
+# 4) Format check (catches unformatted code before push; mirror CI)
+if ! npm run format:check --silent 2>&1; then
+  fail "formatting drift — run \`npm run format\` to fix"
+fi
+ok format
+
+log "${GRN}✓ pre-commit passed${NC}"
