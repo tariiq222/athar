@@ -17,7 +17,7 @@ import { OnboardingService } from './onboarding.service';
 import { OnboardingInputDto } from './dto/onboarding-input.dto';
 import { BrandProfileDraftDto } from './dto/brand-profile-draft.dto';
 import { PatchBrandProfileDraftDto } from './dto/patch-brand-profile.dto';
-import { errorEnvelope } from '../common/dto-validation';
+import { validationErrorBody } from '../common/errors/error-envelope';
 import type { AnalyzeResponse } from './types';
 
 @Controller('brand')
@@ -81,7 +81,7 @@ export class BrandController {
   private async findInTenantOr404(id: string, tenantId: string): Promise<BrandProfile> {
     const profile = await this.prisma.brandProfile.findFirst({ where: { id, tenantId } });
     if (!profile) {
-      throw new NotFoundException(errorEnvelope('not_found', 'الملف غير موجود'));
+      throw new NotFoundException(validationErrorBody('not_found', 'الملف غير موجود'));
     }
     return profile;
   }

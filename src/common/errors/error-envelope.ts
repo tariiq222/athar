@@ -224,3 +224,27 @@ export const securityViolation = (reason: string) =>
 function kindLabel(kind: string): string {
   return { text: 'المسودّات', image: 'الصور', search: 'عمليات البحث' }[kind] ?? kind;
 }
+
+/**
+ * Validation / business-rule error body shape — Sprint A Task 9.1.
+ *
+ * Used as the `response` payload of `UnprocessableEntityException` /
+ * `NotFoundException` throws from controllers and services that need to
+ * surface field-level errors to the client. Distinct from the flat
+ * `ErrorEnvelope` produced by the HTTP exception filter at the catch
+ * site (which only carries `statusCode/error/message`).
+ *
+ * Lives here (not in `dto-validation.ts`) so the entire error envelope
+ * vocabulary is owned by one file.
+ */
+export interface ValidationErrorBody {
+  error: { code: string; message: string; fields: string[] };
+}
+
+export function validationErrorBody(
+  code: string,
+  message: string,
+  fields: string[] = [],
+): ValidationErrorBody {
+  return { error: { code, message, fields } };
+}
