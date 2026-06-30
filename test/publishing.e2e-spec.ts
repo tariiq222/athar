@@ -7,6 +7,7 @@ process.env.JWT_REFRESH_SECRET ||= 'test-refresh-secret';
 
 import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
 import { getQueueToken } from '@nestjs/bullmq';
 import { PublishingModule } from '../src/publishing/publishing.module';
@@ -41,7 +42,7 @@ describe('Publishing (e2e smoke)', () => {
       },
     };
     const moduleRef = await Test.createTestingModule({
-      imports: [PublishingModule, PrismaModule],
+      imports: [PublishingModule, PrismaModule, ThrottlerModule.forRoot([{ name: 'short', ttl: 1000, limit: 3 }, { name: 'medium', ttl: 60_000, limit: 20 }])],
     })
       .overrideProvider(PrismaService)
       .useValue({ post: { findFirst: async () => approvedPost } })
