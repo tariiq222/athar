@@ -3,6 +3,7 @@ import type { Draft, CritiqueResult } from '../types';
 import type { DraftInput } from '../providers/content-provider.interface';
 import { ClaudeContentProvider } from '../providers/claude/claude-content.provider';
 import { UsageRecorder } from '../usage/usage.recorder';
+import { textCostUsd } from '../usage/pricing';
 import { buildRubric } from './rubric.builder';
 
 /**
@@ -50,12 +51,16 @@ export class CritiqueStage {
   }
 
   private async recordUsage(tenantId: string): Promise<void> {
-    const { inputTokens, outputTokens } = this.provider.lastUsage;
+    const { inputTokens, outputTokens, model } = this.provider.lastUsage;
     await this.usage.record({
       tenantId,
       kind: 'text',
       units: inputTokens + outputTokens,
-      costUsd: 0,
+      costUsd: textCostUsd(
+        (model === 'claude-3-5-haiku' ? 'claude-3-5-haiku' : 'claude-3-5-sonnet') as 'claude-3-5-sonnet' | 'claude-3-5-haiku',
+        inputTokens,
+        outputTokens,
+      ),
     });
   }
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClaudeClient } from '../providers/claude/claude.client';
 import { UsageRecorder } from '../usage/usage.recorder';
+import { textCostUsd } from '../usage/pricing';
 
 /**
  * Light learning at launch. When a customer edits/approves a post, the
@@ -28,11 +29,16 @@ export class LearningService {
       'English sentence, the editing preference it reveals (tone, length, wording). Output only that sentence.';
     const user = `Original:\n${post.originalText}\n\nApproved:\n${post.text}`;
     const res = await this.claude.complete({ system, user, maxTokens: 256 });
+    const model = (this.claude as unknown as { model?: string }).model ?? '';
     await this.usage.record({
       tenantId: post.tenantId,
       kind: 'text',
       units: res.inputTokens + res.outputTokens,
-      costUsd: 0,
+      costUsd: textCostUsd(
+        model.includes('haiku') ? 'claude-3-5-haiku' : 'claude-3-5-sonnet',
+        res.inputTokens,
+        res.outputTokens,
+      ),
     });
 
     const summary = res.text.trim();

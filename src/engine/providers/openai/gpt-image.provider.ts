@@ -8,6 +8,7 @@ import { VisionVerifier } from './vision-verifier';
 import { OverlayRenderer } from './overlay-renderer';
 import { ImageStorageService } from '../../storage/image-storage.service';
 import { UsageRecorder } from '../../usage/usage.recorder';
+import { imageCostUsd } from '../../usage/pricing';
 import { IMAGE_GATE_DECISION } from '../../image/image-gate.config';
 import { TenantContextService } from '../../../common/tenant-context.service';
 
@@ -50,7 +51,7 @@ export class GptImageProvider implements ImageProvider {
         this.backgroundPrompt(brief, kit),
         sizeStr,
       );
-      await this.recordImageUsage();
+      await this.recordImageUsage(size, 1);
       const composited = await this.overlay.render(bg, brief, kit, size);
       const url = await this.storage.upload(composited, key);
       return {
@@ -71,7 +72,7 @@ export class GptImageProvider implements ImageProvider {
         this.textPrompt(brief, kit),
         sizeStr,
       );
-      await this.recordImageUsage();
+      await this.recordImageUsage(size, attempts);
       const { verifiedText, matches } = await this.verifier.verify(
         lastBytes,
         brief,
@@ -107,12 +108,12 @@ export class GptImageProvider implements ImageProvider {
     );
   }
 
-  private async recordImageUsage(): Promise<void> {
+  private async recordImageUsage(size: readonly [number, number], attempts: number): Promise<void> {
     await this.usage.record({
       tenantId: this.tenantContext.getTenantId(),
       kind: 'image',
       units: 1,
-      costUsd: 0,
+      costUsd: imageCostUsd('gpt-image-1', size[0], size[1], attempts),
     });
   }
 }

@@ -1,6 +1,13 @@
 import { FactExtractor } from './fact-extractor';
+import { TenantContextService } from '../../common/tenant-context.service';
 
 const page = { url: 'https://reuters.com/x', title: 'Reuters', text: 'GDP grew 4%.' };
+
+function makeExtractor(claude: any) {
+  const usage = { record: jest.fn().mockResolvedValue(undefined) } as any;
+  const tenantContext = new TenantContextService();
+  return { ex: new FactExtractor(claude, usage, tenantContext), usage, tenantContext };
+}
 
 describe('FactExtractor', () => {
   it('maps model claims onto the real source url/title', async () => {
@@ -10,9 +17,10 @@ describe('FactExtractor', () => {
         inputTokens: 5,
         outputTokens: 5,
       }),
+      model: 'claude-3-5-sonnet',
     } as any;
-    const ex = new FactExtractor(claude);
-    const facts = await ex.extract(page, 'economy');
+    const { ex, tenantContext } = makeExtractor(claude);
+    const facts = await tenantContext.runWithTenant('tn', () => ex.extract(page, 'economy'));
     expect(facts).toEqual([
       {
         claim: 'GDP grew 4%',
@@ -30,9 +38,10 @@ describe('FactExtractor', () => {
         inputTokens: 1,
         outputTokens: 1,
       }),
+      model: 'claude-3-5-sonnet',
     } as any;
-    const ex = new FactExtractor(claude);
-    expect(await ex.extract(page, 'economy')).toEqual([]);
+    const { ex, tenantContext } = makeExtractor(claude);
+    expect(await tenantContext.runWithTenant('tn', () => ex.extract(page, 'economy'))).toEqual([]);
   });
 
   it('drops items missing a claim and clamps confidence to 0..1', async () => {
@@ -42,9 +51,10 @@ describe('FactExtractor', () => {
         inputTokens: 1,
         outputTokens: 1,
       }),
+      model: 'claude-3-5-sonnet',
     } as any;
-    const ex = new FactExtractor(claude);
-    const facts = await ex.extract(page, 't');
+    const { ex, tenantContext } = makeExtractor(claude);
+    const facts = await tenantContext.runWithTenant('tn', () => ex.extract(page, 't'));
     expect(facts).toEqual([
       {
         claim: 'x',
@@ -53,5 +63,26 @@ describe('FactExtractor', () => {
         confidence: 1,
       },
     ]);
+  });
+
+  it('records a text UsageRecord with the active tenantId and computed cost', async () => {
+    const claude = {
+      complete: jest.fn().mockResolvedValue({
+        text: JSON.stringify([{ claim: 'ok', confidence: 1 }]),
+        inputTokens: 1000,
+        outputTokens: 500,
+      }),
+      model: 'claude-3-5-sonnet',
+    } as any;
+    const { ex, usage, tenantContext } = makeExtractor(claude);
+    await tenantContext.runWithTenant('tn', () => ex.extract(page, 't'));
+    expect(usage.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tn',
+        kind: 'text',
+        units: 1500,
+        costUsd: expect.closeTo(0.003 + 0.0075, 6),
+      }),
+    );
   });
 });
