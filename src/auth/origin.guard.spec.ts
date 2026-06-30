@@ -39,4 +39,22 @@ describe('OriginGuard', () => {
     expect(() => new OriginGuard().canActivate(ctx('PATCH', 'https://evil.example'))).toThrow(ForbiddenException);
     expect(() => new OriginGuard().canActivate(ctx('DELETE', 'https://evil.example'))).toThrow(ForbiddenException);
   });
+
+  it('allows Bearer-token mutations regardless of Origin (token auth is CSRF-immune)', () => {
+    const c = {
+      switchToHttp: () => ({
+        getRequest: () => ({ method: 'POST', path: '/api/v1/posts', headers: { authorization: 'Bearer x.y.z' } }),
+      }),
+    } as unknown as ExecutionContext;
+    expect(new OriginGuard().canActivate(c)).toBe(true);
+  });
+
+  it('allows the Moyasar webhook path without an Origin (server-to-server)', () => {
+    const c = {
+      switchToHttp: () => ({
+        getRequest: () => ({ method: 'POST', path: '/api/v1/billing/webhook', headers: {} }),
+      }),
+    } as unknown as ExecutionContext;
+    expect(new OriginGuard().canActivate(c)).toBe(true);
+  });
 });

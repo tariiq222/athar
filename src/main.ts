@@ -2,6 +2,7 @@ import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { initSentry } from './observability/sentry';
 
@@ -33,6 +34,9 @@ async function bootstrap() {
   // intentionally NOT route-scoped — there is no endpoint that needs
   // weaker defaults.
   app.use(helmet());
+  // auth-session-hardening: cookie-parser must run before the SessionMiddleware
+  // and the CsrfGuard so that req.cookies is populated (session_token, csrf_token).
+  app.use(cookieParser());
   // Sprint A — Task 13.1: CORS allow-list driven by env. Empty list = same
   // origin only (no Access-Control-Allow-Origin). credentials: true allows
   // the Sanctum-style cookie flow the web client may use.

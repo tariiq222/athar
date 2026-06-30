@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from './password.service';
 import { TokenService } from './token.service';
-import { AuthTokens } from './auth.types';
+import { AuthTokens, SessionUser } from './auth.types';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -11,8 +11,10 @@ import {
   emailAlreadyExists,
   invalidCredentials,
   invalidRefreshToken,
+  unauthenticated,
 } from '../common/errors/error-envelope';
 import { AuditLogService } from '../common/audit/audit-log.service';
+import { addDays } from '../common/date';
 
 @Injectable()
 export class AuthService {
@@ -30,7 +32,7 @@ export class AuthService {
 
     const passwordHash = await this.passwords.hash(dto.password);
     const trialDays = Number(this.config.get<string>('TRIAL_DURATION_DAYS') ?? '7');
-    const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
+    const trialEndsAt = addDays(Date.now(), trialDays);
 
     // Sprint A — Task 4.1: PDPL consent capture. Stored on the user row so we
     // can prove the user agreed to a specific termsVersion on day-N audit.
@@ -101,6 +103,50 @@ export class AuthService {
     if (!matches) throw invalidRefreshToken();
 
     return this.issueAndStore(user.id, user.tenantId);
+  }
+
+  // Sprint A — Task 4: GET /auth/me populator. Reads the user that the JWT
+  // claims to belong to (and which the SessionMiddleware attached to req.user),
+  // joins the tenant's brand profile + subscription status, and shapes the
+  // result into the SessionUser API contract. The single `findFirst` keeps the
+  // handler round-trip to one DB query (the user row + the two tenant-side
+  // relations are loaded in the same SELECT).
+  async me(userId: string): Promise<SessionUser> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        tenantId: true,
+        tenant: {
+          select: {
+            brandProfiles: { select: { id: true }, take: 1 },
+            subscriptions: {
+              select: { status: true },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+    if (!user) throw unauthenticated();
+
+    const subStatus = user.tenant.subscriptions[0]?.status ?? null;
+    // Map Prisma enum (`trialing`) → API contract (`trial`). The DB keeps the
+    // longer verb-form because it's used by the billing pipeline; the client
+    // contract uses `trial` to match the marketing copy.
+    const apiSub: SessionUser['subscriptionStatus'] =
+      subStatus === 'trialing' ? 'trial' : subStatus;
+
+    return {
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      onboardingCompleted: user.tenant.brandProfiles.length > 0,
+      subscriptionStatus: apiSub,
+      tenantId: user.tenantId,
+    };
   }
 
   private async issueAndStore(userId: string, tenantId: string): Promise<AuthTokens> {
