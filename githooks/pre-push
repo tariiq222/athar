@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# pre-push: full CI mirror (lint + typecheck + test + build).
+# Mirrors the `lint-typecheck-test` + `build` jobs in .github/workflows/ci.yml.
+# This is the gate that catches the case where a "test-less" pre-commit slipped
+# something broken into the tree (e.g. scope creep across multiple commits).
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# Skip during rebase/merge fast-forwards (no new content)
+if [[ "$(git symbolic-ref HEAD 2>/dev/null)" == "" ]]; then
+  exit 0
+fi
+
+# Read push target; skip non-push invocations
+while read -r local_ref local_sha remote_ref remote_sha; do
+  :
+done
+
+RED='\033[0;31m'; GRN='\033[0;32m'; YEL='\033[1;33m'; NC='\033[0m'
+log()  { printf '%b\n' "$*"; }
+ok()   { log "  ${GRN}✓${NC} $1"; }
+fail() { log "${RED}✗ $1${NC}"; exit 1; }
+
+log "${YEL}▸ pre-push: full CI mirror (lint + typecheck + test + build)${NC}"
+
+log "  eslint"
+npm run lint --silent 2>&1 | tail -3
+ok lint
+
+log "  tsc --noEmit"
+npm run typecheck --silent 2>&1 | tail -3
+ok typecheck
+
+log "  jest (unit tests)"
+if ! npx jest --no-coverage --silent 2>&1 | tail -5; then
+  fail "tests failed — run \`npm test\` to see errors"
+fi
+ok test
+
+log "  nest build"
+if ! npm run build --silent 2>&1 | tail -3; then
+  fail "build failed — run \`npm run build\` to see errors"
+fi
+ok build
+
+log "${GRN}✓ pre-push passed — safe to push${NC}"
