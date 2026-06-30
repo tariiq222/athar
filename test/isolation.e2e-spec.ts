@@ -76,7 +76,7 @@ describeDb('Tenant isolation (e2e)', () => {
   async function registerAndBrand(email: string) {
     const reg = await fetchJson<AuthTokens>('/api/v1/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ tenantName: `Iso ${email}`, email, password: 'longpass1' }),
+      body: JSON.stringify({ tenantName: `Iso ${email}`, email, password: 'longpass1', acceptTerms: true, termsVersion: 'v1' }),
     });
     expect(reg.status).toBe(201);
     const access = (reg.body as AuthTokens).accessToken;
@@ -118,6 +118,7 @@ describeDb('Tenant isolation (e2e)', () => {
       if (user) {
         await prisma.accountProfile.deleteMany({ where: { tenantId: user.tenantId } });
         await prisma.brandProfile.deleteMany({ where: { tenantId: user.tenantId } });
+        await prisma.auditLog.deleteMany({ where: { tenantId: user.tenantId } });
         await prisma.subscription.deleteMany({ where: { tenantId: user.tenantId } });
         await prisma.user.deleteMany({ where: { tenantId: user.tenantId } });
         await prisma.tenant.deleteMany({ where: { id: user.tenantId } });

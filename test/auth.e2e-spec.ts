@@ -107,7 +107,7 @@ describeDb('Auth (e2e)', () => {
     // 1) register creates a tenant + user + trial subscription and returns tokens.
     const reg = await fetchJson<AuthTokens>('/api/v1/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ tenantName: 'E2E Co', email, password: 'longpass1' }),
+      body: JSON.stringify({ tenantName: 'E2E Co', email, password: 'longpass1', acceptTerms: true, termsVersion: 'v1' }),
     });
     expect(reg.status).toBe(201);
     expect((reg.body as AuthTokens).accessToken).toBeDefined();
@@ -177,7 +177,7 @@ describeDb('Auth (e2e)', () => {
   itDb('register with a duplicate email returns 409 EMAIL_ALREADY_EXISTS', async () => {
     const res = await fetchJson('/api/v1/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ tenantName: 'E2E Co', email, password: 'longpass1' }),
+      body: JSON.stringify({ tenantName: 'E2E Co', email, password: 'longpass1', acceptTerms: true, termsVersion: 'v1' }),
     });
     expect(res.status).toBe(409);
     expect((res.body as Envelope<unknown>).error).toBe('EMAIL_ALREADY_EXISTS');

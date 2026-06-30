@@ -101,6 +101,7 @@ describeDb('Billing (e2e)', () => {
     // re-run on a shared DB does not accumulate Tenant/Subscription/UsageRecord
     // rows. Order: leaf-most dependent first.
     if (tenantId) {
+      await prisma.auditLog.deleteMany({ where: { tenantId } });
       await prisma.invoice.deleteMany({ where: { tenantId } });
       await prisma.usageRecord.deleteMany({ where: { tenantId } });
       await prisma.subscription.deleteMany({ where: { tenantId } });
@@ -117,7 +118,7 @@ describeDb('Billing (e2e)', () => {
     // Register a fresh tenant — creates user + trialing subscription.
     const reg = await fetchJson<AuthTokens>('/api/v1/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ tenantName: 'BillingE2E', email, password: 'longpass1' }),
+      body: JSON.stringify({ tenantName: 'BillingE2E', email, password: 'longpass1', acceptTerms: true, termsVersion: 'v1' }),
     });
     expect(reg.status).toBe(201);
     const token = (reg.body as AuthTokens).accessToken;

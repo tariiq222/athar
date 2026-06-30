@@ -10,6 +10,8 @@ describe('auth DTOs', () => {
       tenantName: 'Acme',
       email: 'not-an-email',
       password: 'short',
+      acceptTerms: true,
+      termsVersion: 'v1',
     });
     const errors = validateSync(dto);
     const props = errors.map((e) => e.property).sort();
@@ -21,8 +23,46 @@ describe('auth DTOs', () => {
       tenantName: 'Acme',
       email: 'founder@acme.com',
       password: 'longenough',
+      acceptTerms: true,
+      termsVersion: 'v1',
     });
     expect(validateSync(dto)).toHaveLength(0);
+  });
+
+  // Sprint A — Task 4.1: PDPL consent capture.
+
+  it('RegisterDto rejects when acceptTerms is false (must be true)', () => {
+    const dto = plainToInstance(RegisterDto, {
+      tenantName: 'Acme',
+      email: 'founder@acme.com',
+      password: 'longenough',
+      acceptTerms: false,
+      termsVersion: 'v1',
+    });
+    const props = validateSync(dto).map((e) => e.property);
+    expect(props).toContain('acceptTerms');
+  });
+
+  it('RegisterDto rejects when acceptTerms is missing', () => {
+    const dto = plainToInstance(RegisterDto, {
+      tenantName: 'Acme',
+      email: 'founder@acme.com',
+      password: 'longenough',
+      termsVersion: 'v1',
+    });
+    const props = validateSync(dto).map((e) => e.property);
+    expect(props).toContain('acceptTerms');
+  });
+
+  it('RegisterDto rejects when termsVersion is missing', () => {
+    const dto = plainToInstance(RegisterDto, {
+      tenantName: 'Acme',
+      email: 'founder@acme.com',
+      password: 'longenough',
+      acceptTerms: true,
+    });
+    const props = validateSync(dto).map((e) => e.property);
+    expect(props).toContain('termsVersion');
   });
 
   it('LoginDto requires email and a non-empty password', () => {
