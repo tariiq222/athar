@@ -205,6 +205,22 @@ export const webhookSignatureInvalid = () => make(ERRORS.WEBHOOK_SIGNATURE_INVAL
 
 export const invoiceNotFound = () => make(ERRORS.INVOICE_NOT_FOUND);
 
+// Sprint A — Task 5.1: payment amount did not match the expected price (either
+// ex-VAT or VAT-inclusive). 422 because the request itself is malformed —
+// the merchant's pricing doesn't match what we expect for this plan.
+export const amountMismatch = (actual: number, allowed: number[]) =>
+  new AppError(
+    422,
+    'AMOUNT_MISMATCH',
+    `مبلغ الدفعة (${actual} هللة) غير مطابق للسعر المتوقع (${allowed.join(' أو ')} هللة).`,
+  );
+
+// Sprint A — Task 2.2: tenant isolation cross-check. Security violation
+// means a JWT tenant claim did not match the user's actual tenant in DB,
+// or the referenced user does not exist — i.e. a forged or stale token.
+export const securityViolation = (reason: string) =>
+  new AppError(403, reason, 'مخالفة أمنية — راجع السجلات.');
+
 function kindLabel(kind: string): string {
   return { text: 'المسودّات', image: 'الصور', search: 'عمليات البحث' }[kind] ?? kind;
 }

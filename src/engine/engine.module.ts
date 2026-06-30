@@ -26,6 +26,12 @@ import { PipelineService } from './pipeline/pipeline.service';
 import { MonthPlanProcessor } from './month-plan/month-plan.processor';
 import { MonthPlanService } from './month-plan/month-plan.service';
 import { LearningService } from './learning/learning.service';
+import { TenantContextService } from '../common/tenant-context.service';
+import {
+  CONTENT_PROVIDER,
+  IMAGE_PROVIDER,
+  SEARCH_PROVIDER,
+} from './providers/provider.tokens';
 
 // Real candidate URL provider: a whitelist-restricted web search.
 // Replace the body with a live search SDK call (results filtered by
@@ -56,6 +62,7 @@ const candidateUrlProvider: CandidateUrlProvider = async (topic, whitelist) =>
     LearningService,
     ClaudeContentProvider,
     GptImageProvider,
+    TenantContextService,
     { provide: 'CANDIDATE_URL_PROVIDER', useValue: candidateUrlProvider },
     {
       provide: LiveSearchProvider,
@@ -69,20 +76,21 @@ const candidateUrlProvider: CandidateUrlProvider = async (topic, whitelist) =>
     },
     // Seam token bindings: consumers depend on the interface, not the
     // concrete class — swap impls without touching call sites.
-    { provide: 'ContentProvider', useExisting: ClaudeContentProvider },
-    { provide: 'ImageProvider', useExisting: GptImageProvider },
-    { provide: 'SearchProvider', useExisting: LiveSearchProvider },
+    { provide: CONTENT_PROVIDER, useExisting: ClaudeContentProvider },
+    { provide: IMAGE_PROVIDER, useExisting: GptImageProvider },
+    { provide: SEARCH_PROVIDER, useExisting: LiveSearchProvider },
   ],
   exports: [
     PipelineService,
     MonthPlanService,
     LearningService,
     UsageRecorder,
+    TenantContextService,
     // Seam tokens exported so BrandModule (and future consumers) can resolve
     // them through EngineModule's real-provider bindings.
-    'ContentProvider',
-    'ImageProvider',
-    'SearchProvider',
+    CONTENT_PROVIDER,
+    IMAGE_PROVIDER,
+    SEARCH_PROVIDER,
   ],
 })
 export class EngineModule {}

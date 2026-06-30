@@ -66,7 +66,74 @@ export class ClaudeContentProvider implements ContentProvider {
     };
   }
 
-  async summarize(_input: SummarizeInput): Promise<SummaryResult> {
-    throw new Error('summarize: not implemented (brand phase requires real impl in a future phase)');
+  async summarize(input: SummarizeInput): Promise<SummaryResult> {
+    // Empty input — no point calling Claude; emit a low-confidence empty
+    // summary so downstream code can treat it as "not enough signal".
+    if (input.texts.length === 0) {
+      return {
+        tone: '',
+        products: [],
+        audience: '',
+        keywords: [],
+        suggestedTopics: [],
+        suggestedCompetitors: [],
+        colors: [],
+        visualStyle: '',
+        confidence: 0.2,
+      };
+    }
+
+    const system =
+      'You are a brand analyst extracting structured signals from Arabic/English source texts ' +
+      'for the أثر social-media product. Return ONLY JSON with exactly these keys: ' +
+      '{tone, products[], audience, keywords[], suggestedTopics[], suggestedCompetitors[], ' +
+      'colors[], logoUrl?, visualStyle, confidence (0..1)}. ' +
+      'Be concise. confidence reflects how clearly the brand is signaled.';
+    const user =
+      `Goal: ${input.goal}\nTexts (${input.texts.length}):\n` +
+      input.texts.map((t, i) => `--- [${i}] ---\n${t}`).join('\n');
+
+    const res = await this.claude.complete({ system, user, maxTokens: 1024 });
+    this.lastUsage = { inputTokens: res.inputTokens, outputTokens: res.outputTokens };
+
+    let parsed: Partial<SummaryResult> = {};
+    try {
+      parsed = JSON.parse(res.text) as Partial<SummaryResult>;
+    } catch {
+      // Malformed JSON — fail safe with a low-confidence empty result.
+      return {
+        tone: '',
+        products: [],
+        audience: '',
+        keywords: [],
+        suggestedTopics: [],
+        suggestedCompetitors: [],
+        colors: [],
+        visualStyle: '',
+        confidence: 0.2,
+      };
+    }
+
+    const clamp = (n: unknown): number => {
+      const v = typeof n === 'number' ? n : NaN;
+      if (!Number.isFinite(v)) return 0.2;
+      return Math.min(1, Math.max(0, v));
+    };
+    const str = (v: unknown) => (typeof v === 'string' ? v : '');
+    const arr = (v: unknown) =>
+      Array.isArray(v) ? v.filter((s) => typeof s === 'string') : [];
+
+    return {
+      tone: str(parsed.tone),
+      products: arr(parsed.products),
+      audience: str(parsed.audience),
+      keywords: arr(parsed.keywords),
+      suggestedTopics: arr(parsed.suggestedTopics),
+      suggestedCompetitors: arr(parsed.suggestedCompetitors),
+      colors: arr(parsed.colors),
+      logoUrl: typeof parsed.logoUrl === 'string' ? parsed.logoUrl : undefined,
+      visualStyle: str(parsed.visualStyle),
+      confidence: clamp(parsed.confidence),
+    };
   }
 }

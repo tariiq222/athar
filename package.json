@@ -28,7 +28,10 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "testEnvironment": "node",
-    "forceExit": true
+    "forceExit": true,
+    "setupFiles": [
+      "<rootDir>/test/jest-env-setup.ts"
+    ]
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",
@@ -57,7 +60,8 @@
     "rxjs": "^7.8.2",
     "satori": "^0.26.0",
     "sharp": "^0.35.2",
-    "twitter-text": "^3.1.0"
+    "twitter-text": "^3.1.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.23",

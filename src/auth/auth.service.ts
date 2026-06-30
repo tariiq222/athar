@@ -12,6 +12,7 @@ import {
   invalidCredentials,
   invalidRefreshToken,
 } from '../common/errors/error-envelope';
+import { AuditLogService } from '../common/audit/audit-log.service';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +21,7 @@ export class AuthService {
     private readonly passwords: PasswordService,
     private readonly tokens: TokenService,
     private readonly config: ConfigService,
+    private readonly audit: AuditLogService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthTokens> {
@@ -30,6 +32,10 @@ export class AuthService {
     const trialDays = Number(this.config.get<string>('TRIAL_DURATION_DAYS') ?? '7');
     const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
 
+    // Sprint A — Task 4.1: PDPL consent capture. Stored on the user row so we
+    // can prove the user agreed to a specific termsVersion on day-N audit.
+    const consentGivenAt = new Date();
+
     const user = await this.prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({ data: { name: dto.tenantName } });
       const created = await tx.user.create({
@@ -38,6 +44,9 @@ export class AuthService {
           email: dto.email,
           name: dto.name ?? null,
           passwordHash,
+          role: 'owner',
+          consentGivenAt,
+          consentVersion: dto.termsVersion,
         },
       });
       await tx.subscription.create({
@@ -51,6 +60,13 @@ export class AuthService {
       return created;
     });
 
+    await this.audit.log({
+      tenantId: user.tenantId,
+      userId: user.id,
+      action: 'auth.register',
+      metadata: { termsVersion: dto.termsVersion },
+    });
+
     return this.issueAndStore(user.id, user.tenantId);
   }
 
@@ -58,7 +74,14 @@ export class AuthService {
     const user = await this.prisma.user.findFirst({
       where: { email: dto.email, deletedAt: null },
     });
-    if (!user) throw invalidCredentials();
+    if (!user) {
+      // Sprint A — Task 4.1: timing-equalizer. Without this, the missing-user
+      // path returns ~immediately while the wrong-password path burns a hash
+      // cycle — letting an attacker enumerate registered emails by latency.
+      // Burn one hash to equalize; discard the result.
+      await this.passwords.hash('*timing-equalizer*');
+      throw invalidCredentials();
+    }
 
     const ok = await this.passwords.verify(user.passwordHash, dto.password);
     if (!ok) throw invalidCredentials();

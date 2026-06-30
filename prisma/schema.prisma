@@ -26,6 +26,14 @@ enum SubscriptionStatus {
   canceled
 }
 
+// Sprint A — Task 3.1: role-based access for owners/admins/editors/viewers.
+enum UserRole {
+  owner
+  admin
+  editor
+  viewer
+}
+
 model Tenant {
   id         String    @id @default(cuid())
   name       String
@@ -38,6 +46,7 @@ model Tenant {
   subscriptions Subscription[]
   usageRecords  UsageRecord[]
   invoices      Invoice[]
+  auditLogs     AuditLog[]
 }
 
 model User {
@@ -49,6 +58,11 @@ model User {
   refreshTokenHash String? // hash of the currently-valid refresh token (rotation)
   deletedAt        DateTime? // soft-delete marker (PDPL)
   createdAt        DateTime  @default(now())
+
+  // Sprint A — Task 3.1: role-based access + PDPL consent.
+  role           UserRole  @default(editor)
+  consentGivenAt DateTime?
+  consentVersion String?
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
@@ -103,7 +117,7 @@ model Post {
   quotaStatus    String     @default("ok") // 'ok' | 'skipped_quota'
   originalText   String? // first generated text, kept for the learning diff
   monthPlanId    String?
-  monthPlan      MonthPlan?  @relation(fields: [monthPlanId], references: [id])
+  monthPlan      MonthPlan? @relation(fields: [monthPlanId], references: [id])
 
   brandProfile BrandProfile     @relation(fields: [brandProfileId], references: [id])
   image        ImageAsset?
@@ -188,9 +202,9 @@ model MonthPlan {
 
 model SaudiOccasion {
   id            String   @id @default(cuid())
-  tenantId      String?  // null = public occasion shared by all tenants
-  slug          String   // stable occasion identifier — the upsert key
-  kind          String   // SaudiOccasionKind: national|foundation|ramadan|eid_fitr|eid_adha|commercial
+  tenantId      String? // null = public occasion shared by all tenants
+  slug          String // stable occasion identifier — the upsert key
+  kind          String // SaudiOccasionKind: national|foundation|ramadan|eid_fitr|eid_adha|commercial
   nameAr        String
   nameEn        String
   startDate     DateTime
@@ -202,6 +216,7 @@ model SaudiOccasion {
   @@index([tenantId, startDate, endDate])
   @@index([gregorianYear])
 }
+
 // Phase 5 — assisted manual publishing. Added by a NEW migration.
 
 model Reminder {
@@ -246,9 +261,48 @@ model Invoice {
   buyerName        String
   status           String   @default("issued") // 'issued' | 'refunded'
 
+  // Sprint A — Task 3.1: ZATCA-compliant VAT + retention.
+  subtotalMinor      Int? // price-minor, before VAT (nullable for pre-VAT invoices)
+  vatMinor           Int? // VAT amount in halalas
+  vatRate            Float     @default(0.15) // 15% KSA
+  taxableAmountMinor Int? // ZATCA taxable base
+  legalBasis         String    @default("contract")
+  retentionUntil     DateTime? // issuedAt + 10y for ZATCA
+
   tenant       Tenant       @relation(fields: [tenantId], references: [id])
   subscription Subscription @relation(fields: [subscriptionId], references: [id])
 
   @@unique([tenantId, number])
   @@index([tenantId])
+}
+
+// Sprint A — Task 3.1: append-only audit trail for security/PDPL events.
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String?
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+}
+
+// Sprint A — Task 3.1: idempotency table for inbound webhooks (Moyasar, etc.).
+// Primary key is the upstream event id so duplicate deliveries are a no-op.
+model WebhookEvent {
+  id          String    @id // upstream event id (e.g. Moyasar event.id)
+  type        String
+  tenantId    String? // nullable because some events are tenant-less
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([tenantId, createdAt])
 }

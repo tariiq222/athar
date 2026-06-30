@@ -18,10 +18,15 @@ import { PublishingModule } from './publishing/publishing.module';
 import { BillingModule } from './billing/billing.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { buildValidationPipe } from './common/dto-validation';
+import { validateConfig } from './config/config-validation';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+      validate: validateConfig,
+    }),
     BullModule.forRoot({
       connection: {
         host: process.env.REDIS_HOST ?? 'localhost',

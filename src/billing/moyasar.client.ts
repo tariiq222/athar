@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { MoyasarPayment, CreatePaymentInput } from './billing.types';
+import { AppError } from '../common/errors/error-envelope';
 
 interface MoyasarConfig {
   secretKey: string;
@@ -44,8 +45,14 @@ export class MoyasarClient {
   }
 
   private async parse(res: Response): Promise<MoyasarPayment> {
-    const text = await res.text();
-    if (!res.ok) throw new Error(`Moyasar ${res.status}: ${text}`);
-    return JSON.parse(text) as MoyasarPayment;
+    if (!res.ok) {
+      // Sprint A — Task 6.1: surface gateway failures as a typed 502 (bad
+      // gateway) so callers can distinguish "Moyasar returned an error"
+      // from "our code threw". The raw text is logged elsewhere by the
+      // controller — do not echo it back to clients (it can include
+      // provider-internal messages).
+      throw new AppError(502, 'PAYMENT_GATEWAY_ERROR', 'فشل بوابة الدفع.');
+    }
+    return (await res.json()) as MoyasarPayment;
   }
 }

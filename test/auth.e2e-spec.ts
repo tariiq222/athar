@@ -1,23 +1,5 @@
-// Environment: same defaults as src/app.module.spec.ts so the e2e can boot
-// AppModule without a real .env. These are no-ops when already set.
-process.env.JWT_ACCESS_SECRET ||= 'test-access-secret';
-process.env.JWT_REFRESH_SECRET ||= 'test-refresh-secret';
-process.env.JWT_ACCESS_TTL ||= '15m';
-process.env.JWT_REFRESH_TTL ||= '7d';
-process.env.TRIAL_DURATION_DAYS ||= '7';
-process.env.PURGE_RETENTION_DAYS ||= '30';
-process.env.DATABASE_URL ||= 'postgresql://athar:athar@localhost:5442/athar?schema=public';
-process.env.OPENAI_API_KEY ||= 'test-openai-key';
-process.env.OPENAI_IMAGE_MODEL ||= 'gpt-image-1';
-process.env.OPENAI_VISION_MODEL ||= 'gpt-4o-mini';
-process.env.ANTHROPIC_API_KEY ||= 'test-anthropic-key';
-process.env.ANTHROPIC_MODEL ||= 'claude-sonnet-4-5';
-process.env.MINIO_ENDPOINT ||= 'localhost';
-process.env.MINIO_PORT ||= '9000';
-process.env.MINIO_ACCESS_KEY ||= 'test-minio';
-process.env.MINIO_SECRET_KEY ||= 'test-minio-secret';
-process.env.MINIO_BUCKET ||= 'athar-images';
-process.env.OPENROUTER_API_KEY ||= 'test-openrouter-key';
+// Shared env defaults so the e2e can boot AppModule without a real .env.
+import './e2e-env-setup';
 
 // Skip the entire suite if DATABASE_URL is absent (no real Postgres to talk to).
 // This mirrors the failure mode of prisma.service.spec.ts on a host with no DB env.
@@ -125,7 +107,7 @@ describeDb('Auth (e2e)', () => {
     // 1) register creates a tenant + user + trial subscription and returns tokens.
     const reg = await fetchJson<AuthTokens>('/api/v1/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ tenantName: 'E2E Co', email, password: 'longpass1' }),
+      body: JSON.stringify({ tenantName: 'E2E Co', email, password: 'longpass1', acceptTerms: true, termsVersion: 'v1' }),
     });
     expect(reg.status).toBe(201);
     expect((reg.body as AuthTokens).accessToken).toBeDefined();
@@ -195,7 +177,7 @@ describeDb('Auth (e2e)', () => {
   itDb('register with a duplicate email returns 409 EMAIL_ALREADY_EXISTS', async () => {
     const res = await fetchJson('/api/v1/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ tenantName: 'E2E Co', email, password: 'longpass1' }),
+      body: JSON.stringify({ tenantName: 'E2E Co', email, password: 'longpass1', acceptTerms: true, termsVersion: 'v1' }),
     });
     expect(res.status).toBe(409);
     expect((res.body as Envelope<unknown>).error).toBe('EMAIL_ALREADY_EXISTS');

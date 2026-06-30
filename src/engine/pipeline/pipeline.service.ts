@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type {
   GenerationRequest,
   PipelineResult,
@@ -7,12 +7,14 @@ import type {
 } from '../types';
 import { EngineError } from '../types';
 import type { DraftInput } from '../providers/content-provider.interface';
+import type { ImageProvider } from '../providers/image-provider.interface';
 import { LiveSearchProvider } from '../search/live-search.provider';
 import { DraftStage } from '../draft/draft.stage';
 import { CritiqueStage } from '../draft/critique.stage';
-import { GptImageProvider } from '../providers/openai/gpt-image.provider';
 import { AssembleStage, PlatformLimitExceeded } from '../assemble/assemble.stage';
 import { UsageRecorder } from '../usage/usage.recorder';
+import { IMAGE_PROVIDER } from '../providers/provider.tokens';
+import { TenantContextService } from '../../common/tenant-context.service';
 
 /**
  * Orchestrates research → draft → critique → image → assemble for a
@@ -31,9 +33,10 @@ export class PipelineService {
     private readonly search: LiveSearchProvider,
     private readonly draftStage: DraftStage,
     private readonly critiqueStage: CritiqueStage,
-    private readonly imageProvider: GptImageProvider,
+    @Inject(IMAGE_PROVIDER) private readonly imageProvider: ImageProvider,
     private readonly assembleStage: AssembleStage,
     private readonly usage: UsageRecorder,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async generateOne(
@@ -65,11 +68,12 @@ export class PipelineService {
 
     let image: ImageAsset | null = null;
     try {
-      this.imageProvider.setTenant(brand.tenantId);
-      image = await this.imageProvider.generateImage(
-        draft.imageBrief,
-        brand.brandKit,
-        platform,
+      image = await this.tenantContext.runWithTenant(brand.tenantId, () =>
+        this.imageProvider.generateImage(
+          draft.imageBrief,
+          brand.brandKit,
+          platform,
+        ),
       );
     } catch (err) {
       if (err instanceof EngineError && err.kind === 'provider_error') {

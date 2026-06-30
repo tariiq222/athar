@@ -11,4 +11,5 @@ export interface AuthTokens {
   refreshToken: string;
   tokenType: 'Bearer';
   expiresIn: number; // access-token lifetime in seconds
+  tenantId: string; // echoed for the client so the first call after register doesn't need to decode the JWT
 }

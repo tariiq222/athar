@@ -3,3 +3,4 @@
 // and EngineModule resolve to the same provider instance at the root injector.
 export const CONTENT_PROVIDER = 'ContentProvider';
 export const SEARCH_PROVIDER = 'SearchProvider';
+export const IMAGE_PROVIDER = 'ImageProvider';

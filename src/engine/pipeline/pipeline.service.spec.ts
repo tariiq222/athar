@@ -3,6 +3,7 @@ import { PlatformLimitExceeded } from '../assemble/assemble.stage';
 import { EngineError } from '../types';
 import type { GenerationRequest } from '../types';
 import { BUSINESS_PLAN } from '../../config/billing-plans';
+import { TenantContextService } from '../../common/tenant-context.service';
 
 const req: GenerationRequest = {
   brandProfile: {
@@ -29,7 +30,6 @@ function deps(over: Record<string, any> = {}) {
     draftStage: { run: jest.fn().mockResolvedValue(okDraft) },
     critiqueStage: { run: jest.fn().mockResolvedValue({ draft: okDraft, issues: [] }) },
     imageProvider: {
-      setTenant: jest.fn(),
       generateImage: jest.fn().mockResolvedValue({
         url: 'u',
         verifiedText: 't',
@@ -44,6 +44,7 @@ function deps(over: Record<string, any> = {}) {
       getCurrentPlan: jest.fn().mockResolvedValue(BUSINESS_PLAN),
       canConsume: jest.fn().mockResolvedValue({ allowed: true, used: 0, cap: 60 }),
     },
+    tenantContext: new TenantContextService(),
     ...over,
   };
 }
@@ -55,6 +56,7 @@ const make = (d: ReturnType<typeof deps>) =>
     d.imageProvider as any,
     d.assembleStage as any,
     d.usage as any,
+    d.tenantContext,
   );
 
 describe('PipelineService', () => {
@@ -67,7 +69,7 @@ describe('PipelineService', () => {
       critiqueIssues: [],
       imageMethod: 'gpt-image',
     });
-    expect(d.imageProvider.setTenant).toHaveBeenCalledWith('tn');
+    expect(d.imageProvider.generateImage).toHaveBeenCalledTimes(1);
   });
 
   it('checks canConsume for text + image and throws skipped_quota on text denial', async () => {
@@ -114,14 +116,12 @@ describe('PipelineService', () => {
     expect(d.draftStage.run).toHaveBeenCalledTimes(1);
     expect(d.critiqueStage.run).toHaveBeenCalledTimes(1);
     // ...and image generation must be the thing that did NOT run.
-    expect(d.imageProvider.setTenant).not.toHaveBeenCalled();
     expect(d.imageProvider.generateImage).not.toHaveBeenCalled();
   });
 
   it('degrades to text-only post when image generation fails with provider_error', async () => {
     const d = deps({
       imageProvider: {
-        setTenant: jest.fn(),
         generateImage: jest
           .fn()
           .mockRejectedValue(new EngineError('img down', 'provider_error')),

@@ -8,6 +8,7 @@ import { BillingController } from './billing.controller';
 import { BillingService } from './billing.service';
 import { BillingSchedulerService } from './billing-scheduler.service';
 import { MoyasarClient } from './moyasar.client';
+import { IdempotencyService } from './idempotency.service';
 import {
   TRIAL_EXPIRY_QUEUE,
   TrialExpiryProcessor,
@@ -30,6 +31,7 @@ import {
       useFactory: (cfg: ConfigService) =>
         MoyasarClient.fromSecret(cfg.get<string>('MOYASAR_SECRET_KEY') ?? ''),
     },
+    IdempotencyService,
     TrialExpiryProcessor,
     BillingSchedulerService,
   ],

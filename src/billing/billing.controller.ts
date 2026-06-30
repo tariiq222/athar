@@ -15,11 +15,16 @@ import { TenantGuard } from '../tenant/tenant.guard';
 import { CurrentTenant } from '../tenant/current-tenant.decorator';
 import { TenantContext } from '../tenant/tenant-context';
 import { webhookSignatureInvalid } from '../common/errors/error-envelope';
-import { BillingService } from './billing.service';
+import { BillingService, TenantCtx } from './billing.service';
 import { MoyasarClient } from './moyasar.client';
 import { MoyasarWebhookEvent } from './billing.types';
 import { SubscribeDto } from './dto/subscribe.dto';
-import { verifyWebhookToken } from './webhook-signature';
+import { verifyMoyasarHmac } from './webhook-hmac';
+import { IdempotencyService } from './idempotency.service';
+
+interface RequestWithRawBody extends Request {
+  rawBody?: Buffer;
+}
 
 @Controller('billing')
 export class BillingController {
@@ -27,6 +32,7 @@ export class BillingController {
     private readonly billing: BillingService,
     private readonly moyasar: MoyasarClient,
     private readonly config: ConfigService,
+    private readonly idempotency: IdempotencyService,
   ) {}
 
   @Post('subscribe')
@@ -38,20 +44,61 @@ export class BillingController {
     return this.billing.createSubscriptionIntent(ctx, dto.planCode, dto.cycle);
   }
 
+  // Sprint A — Task 6.1: HMAC-signed webhook + idempotency. Replaces the old
+  // `body.secret_token` constant-time check (anyone who reads the body can
+  // forge that) with HMAC-SHA256 over the raw bytes Moyasar actually sent
+  // (rawBody is wired in main.ts). Idempotency is keyed on `event.id` so a
+  // duplicate delivery short-circuits to `{ idempotent: true }` instead of
+  // creating a second invoice.
   @Post('webhook')
   @HttpCode(200)
-  async webhook(@Req() req: Request) {
-    const body = req.body as MoyasarWebhookEvent;
-    const expected = this.config.get<string>('MOYASAR_WEBHOOK_SECRET') ?? '';
-    if (!verifyWebhookToken(body.secret_token, expected)) {
+  async webhook(
+    @Req() req: RequestWithRawBody,
+    @Body() body: MoyasarWebhookEvent,
+    // The signature header carries `<unix_ts>.<sigHex>`. Spring's @Header
+    // name is case-insensitive at the HTTP layer but we normalize to
+    // 'signature' (Moyasar's documented header).
+  ) {
+    const raw = req.rawBody;
+    if (!raw) {
+      // Defensive: a misconfigured deployment without rawBody would silently
+      // skip HMAC verification. Fail closed.
       throw webhookSignatureInvalid();
     }
-    // Re-fetch verifies status; idempotent on payment.id (BillingService.activateFromPayment).
-    const ctx = {
-      tenantId: body.data.metadata.tenant_id,
-      userId: 'webhook',
-    };
-    return this.billing.handleWebhookEvent(body, ctx);
+    const rawText = raw.toString('utf8');
+    const signature = (req.headers['signature'] as string | undefined) ?? '';
+    const secret = this.config.get<string>('MOYASAR_WEBHOOK_SECRET') ?? '';
+    if (!verifyMoyasarHmac(rawText, signature, secret)) {
+      throw webhookSignatureInvalid();
+    }
+
+    const event = body;
+    if (!event?.id) {
+      // No event id → can't idempotency-check. Treat as invalid signature
+      // (defensive: a forged body without an id is also a forgery).
+      throw webhookSignatureInvalid();
+    }
+
+    const tenantId = event.data?.metadata?.tenant_id ?? null;
+    const first = await this.idempotency.claim(event.id, event.type, tenantId, event);
+    if (!first) {
+      // Already processed in a previous delivery — ack with the idempotent
+      // flag so Moyasar's retry logic sees a 2xx and stops.
+      return { received: true, idempotent: true };
+    }
+
+    const ctx: TenantCtx = { tenantId: tenantId ?? '', userId: 'webhook' };
+    try {
+      const out = await this.billing.handleWebhookEvent(event, ctx);
+      await this.idempotency.markProcessed(event.id);
+      return { received: true, ...out };
+    } catch (err) {
+      // Don't mark processed on failure — let Moyasar retry. The claim row
+      // stays in place so a future retry sees it as already-claimed, which
+      // is acceptable: we'd rather skip a duplicate processing than re-run
+      // and potentially create a second invoice.
+      throw err;
+    }
   }
 
   @Get('subscription')
