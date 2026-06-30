@@ -22,4 +22,12 @@ describe('PasswordService', () => {
   it('verify returns false (never throws) on a malformed hash', async () => {
     await expect(svc.verify('not-a-hash', 'whatever')).resolves.toBe(false);
   });
+
+  // Sprint A — Task 2.1: pin OWASP-2025 argon2id parameters.
+
+  it('hashes with OWASP-2025 argon2id parameters (m=19456,t=2,p=1)', async () => {
+    const hash = await svc.hash('s3cret-passw0rd');
+    // Argon2 hash header: $argon2id$v=19$m=<mem>,t=<time>,p=<par>$
+    expect(hash).toMatch(/^\$argon2id\$v=19\$m=19456,t=2,p=1\$/);
+  });
 });

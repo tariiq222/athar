@@ -51,4 +51,34 @@ describe('TokenService', () => {
       response: { error: 'UNAUTHENTICATED' },
     });
   });
+
+  // Sprint A — Task 2.1: hardening (HS256 + iss + aud).
+
+  it('verifyAccess rejects a token with the wrong issuer', async () => {
+    const bad = await svc.signAccess({ sub: 'u1', tenantId: 't1' }, { issuer: 'evil' });
+    await expect(svc.verifyAccess(bad)).rejects.toMatchObject({
+      response: { error: 'UNAUTHENTICATED' },
+    });
+  });
+
+  it('verifyAccess rejects a refresh token (cross-type)', async () => {
+    const refresh = await svc.signRefresh({ sub: 'u1', tenantId: 't1' });
+    await expect(svc.verifyAccess(refresh)).rejects.toMatchObject({
+      response: { error: 'UNAUTHENTICATED' },
+    });
+  });
+
+  it('verifyAccess rejects a token signed with HS512 (wrong algorithm)', async () => {
+    // Same secret, different algorithm — only the algorithms: ['HS256'] constraint
+    // should reject this. (A different secret would be rejected by signature alone,
+    // which would mask whether the algorithm guard is actually doing its job.)
+    const other = new JwtService({
+      secret: 'access-secret',
+      signOptions: { algorithm: 'HS512' },
+    });
+    const tok = await other.signAsync({ sub: 'u1', tenantId: 't1', type: 'access' });
+    await expect(svc.verifyAccess(tok)).rejects.toMatchObject({
+      response: { error: 'UNAUTHENTICATED' },
+    });
+  });
 });
