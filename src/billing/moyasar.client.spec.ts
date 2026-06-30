@@ -45,11 +45,17 @@ describe('MoyasarClient', () => {
     expect(out.status).toBe('paid');
   });
 
-  it('throws on non-2xx response with the body', async () => {
+  it('throws on non-2xx response as a typed 502 PAYMENT_GATEWAY_ERROR (does not echo the body)', async () => {
     global.fetch = jest.fn(async () =>
       new Response(JSON.stringify({ message: 'invalid amount' }), { status: 422, headers: { 'content-type': 'application/json' } }),
     ) as any;
     const client = new MoyasarClient({ secretKey: 'sk_test_x', baseUrl: 'https://api.moyasar.com/v1' });
-    await expect(client.fetchPayment('bad')).rejects.toThrow(/invalid amount/);
+    await expect(client.fetchPayment('bad')).rejects.toMatchObject({
+      code: 'PAYMENT_GATEWAY_ERROR',
+      status: 502,
+    });
+    // Provider's internal message MUST NOT leak to clients (it can include
+    // account-internal context). The Arabic envelope is what callers see.
+    await expect(client.fetchPayment('bad')).rejects.not.toThrow(/invalid amount/);
   });
 });
