@@ -16,7 +16,7 @@ import { CalendarModule } from './calendar/calendar.module';
 import { NotificationModule } from './notifications/notifications.module';
 import { PublishingModule } from './publishing/publishing.module';
 import { BillingModule } from './billing/billing.module';
-import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { buildValidationPipe } from './common/dto-validation';
 import { validateConfig } from './config/config-validation';
 
@@ -48,9 +48,12 @@ import { validateConfig } from './config/config-validation';
     PublishingModule,
     BillingModule,
   ],
+  // Sprint A — Task 9.1: single APP_PIPE + single APP_FILTER (was previously
+  // duplicated by `useGlobalPipes`/`useGlobalFilters` in main.ts — call N
+  // would stack N copies of the filter/pipe on the same request chain).
   providers: [
     { provide: APP_PIPE, useFactory: buildValidationPipe },
-    { provide: APP_FILTER, useClass: GlobalExceptionFilter },
+    { provide: APP_FILTER, useClass: HttpExceptionFilter },
   ],
 })
 export class AppModule {}

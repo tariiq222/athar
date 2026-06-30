@@ -1,13 +1,12 @@
 import { UnprocessableEntityException, ValidationError, ValidationPipe } from '@nestjs/common';
+import { validationErrorBody } from './errors/error-envelope';
 
-export interface ErrorEnvelope {
-  error: { code: string; message: string; fields: string[] };
-}
-
-export function errorEnvelope(code: string, message: string, fields: string[] = []): ErrorEnvelope {
-  return { error: { code, message, fields } };
-}
-
+/**
+ * Sprint A — Task 9.1: this file owns the *factory* for the global
+ * ValidationPipe. The error-envelope vocabulary (validation error body
+ * shape, flat envelope, AppError helpers) now lives in
+ * `src/common/errors/error-envelope.ts` — the single source of truth.
+ */
 export function buildValidationPipe(): ValidationPipe {
   return new ValidationPipe({
     whitelist: true,
@@ -16,7 +15,7 @@ export function buildValidationPipe(): ValidationPipe {
     exceptionFactory: (errors: ValidationError[]) => {
       const fields = errors.map((e) => e.property);
       return new UnprocessableEntityException(
-        errorEnvelope('validation_error', 'بيانات غير صالحة', fields),
+        validationErrorBody('validation_error', 'بيانات غير صالحة', fields),
       );
     },
   });
