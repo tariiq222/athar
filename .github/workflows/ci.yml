@@ -94,7 +94,7 @@ jobs:
         # MinIO image no longer auto-starts `server /data` on bare invocation
         # in recent tags — pass the command explicitly so the container becomes
         # healthy for downstream jobs. See Task 12.1 follow-up commit.
-        command: ["server", "/data", "--console-address", ":9001"]
+        command: server /data --console-address :9001
         options: >-
           --health-cmd "curl -fsS http://localhost:9000/minio/health/live || exit 1"
           --health-interval 10s --health-timeout 5s --health-retries 5
@@ -197,7 +197,7 @@ jobs:
         # MinIO image no longer auto-starts `server /data` on bare invocation
         # in recent tags — pass the command explicitly so the container becomes
         # healthy for downstream jobs. See Task 12.1 follow-up commit.
-        command: ["server", "/data", "--console-address", ":9001"]
+        command: server /data --console-address :9001
         options: >-
           --health-cmd "curl -fsS http://localhost:9000/minio/health/live || exit 1"
           --health-interval 10s --health-timeout 5s --health-retries 5
