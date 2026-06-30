@@ -1,0 +1,1 @@
+export { TenantThrottlerGuard } from './tenant-throttler.guard';

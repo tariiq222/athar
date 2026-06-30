@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { BrandModule } from './brand.module';
 import { BrandController } from './brand.controller';
 import { OnboardingService } from './onboarding.service';
@@ -27,7 +28,16 @@ process.env.DATABASE_URL ||= 'postgresql://test:test@localhost:5432/test?schema=
 describe('BrandModule', () => {
   it('compiles and resolves the controller + service', async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }), BrandModule],
+      imports: [
+      ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }),
+      // Sprint A Task 10.1: AuthController uses ThrottlerGuard, so AuthModule
+      // needs THROTTLER:MODULE_OPTIONS in scope when compiled standalone.
+      ThrottlerModule.forRoot([
+        { name: 'short', ttl: 1000, limit: 3 },
+        { name: 'medium', ttl: 60_000, limit: 20 },
+      ]),
+      BrandModule,
+    ],
     })
       .overrideProvider(PrismaService)
       .useValue({ usageRecord: { create: jest.fn() }, brandProfile: {}, accountProfile: {} })
