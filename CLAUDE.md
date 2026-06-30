@@ -88,3 +88,29 @@ Phased plan-of-plans ([docs/blueprint/17-خطة-المشروع.md](docs/blueprin
 - `pr-review-expert`, `/code-review` — before merging.
 
 **Quality is the product.** The differentiator over $10 tools is Arabic quality: tone match, real sourced facts, and clean Arabic-on-image. Periodic human eval of Arabic output is part of the definition of done — don't ship engine output that hasn't been judged against the rubric.
+
+## Coding rules (enforced by lint + CI)
+
+These rules are not aspirational — they are checked by `npm run verify` (lint + typecheck + format + tests) on every CI run. Don't ship code that breaks them.
+
+### Engine seam (architectural)
+
+- **AI/search SDKs live ONLY in `src/engine/providers/**`.** Imports of `@anthropic-ai/sdk` and `openai` are blocked everywhere else by ESLint (`no-restricted-imports`). Depend on `ContentProvider` / `ImageProvider` / `SearchProvider` seams from services.
+- **Platform limits live in `src/config/platform-limits.ts`** — never hardcode LinkedIn 3000 / X 280 in a service.
+- **Post lifecycle is exactly `draft → pending_review → approved → published`.** Transitions go through `PostStateMachine`, not ad-hoc string writes.
+- **Every domain row carries `tenantId`.** Every query filters on it. No global reads.
+
+### Type safety
+
+- **No `any` in production code.** Tests (`*.spec.ts`) may use it. Prisma JSON columns use `Prisma.InputJsonValue`; Prisma row mappers use `Prisma.XGetPayload<{ include: ... }>` so the row type matches the query.
+- **`prefer-const`, `no-var`, `eqeqeq`** — enforced.
+- **`unknown` over `any`** at boundaries (`catch (err: unknown)`, `req: { ... }`). Narrow before use.
+
+### Style
+
+- **Prettier** is the formatter — no manual formatting debates. Run `npm run format` before committing; CI runs `npm run format:check`.
+- **English-only** in identifiers, comments, log strings, commit messages. Arabic in user-facing copy + explicitly-requested docs only.
+
+### Before opening a PR
+
+Run `npm run verify`. It runs lint + typecheck + format-check + tests. CI will reject the PR otherwise.

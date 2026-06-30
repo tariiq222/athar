@@ -96,6 +96,8 @@ src/engine/learning/learning.service.spec.ts
 
 ### Task 1: Image decision gate — 20-image Arabic-text breakage test (build-task #1)
 
+**Status:** ✅ Merged to main
+
 > This is the formal decision gate from [16](../blueprint/16-معمارية-المحرّك.md) ("بوابة قرار الصور") and build-task #1 from [14](../blueprint/14-قرارات-التنفيذ.md). It MUST run before the image stage (Task 13) is built: its result fixes the default `method` and `attempts`. The runner uses real gpt-image + a real vision read; the unit test pins the breakage-rate math and the decision rule. The committed `IMAGE_GATE_DECISION` is the artifact downstream tasks import.
 
 **Files:**
@@ -326,6 +328,8 @@ git commit -m "feat(engine): add 20-image Arabic breakage gate and fix image met
 
 ### Task 2: Trusted-sources config (whitelist owned by this phase)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/config/trusted-sources.ts`, `src/config/trusted-sources.spec.ts`
 
@@ -451,6 +455,8 @@ git commit -m "feat(engine): add trusted-sources whitelist config owned by engin
 
 ### Task 3: Extend engine types + schema (quota/learning columns, error kinds)
 
+**Status:** ✅ Merged to main
+
 > Adds the engine's own types on top of foundation `src/engine/types.ts`, and the DB columns the pipeline needs, in a NEW migration (LR-004). Foundation already has `Post`, `ImageAsset`, `SourceCitation`, `UsageRecord`; this adds a `quotaStatus` to `Post`, `originalText` for the learning diff, and a `MonthPlan` table for progress tracking.
 
 **Files:**
@@ -570,6 +576,8 @@ git commit -m "feat(engine): add engine error/result types and quota/monthplan s
 ---
 
 ### Task 4: Claude client (thin Anthropic wrapper — the only file importing the SDK)
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/engine/providers/claude/claude.client.ts`, `src/engine/providers/claude/claude.client.spec.ts`
@@ -704,6 +712,8 @@ git commit -m "feat(engine): add thin Anthropic Claude client wrapper"
 
 ### Task 5: Source fetcher (whitelist-guarded page fetch) — Stage 1 part A
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/engine/search/source-fetcher.ts`, `src/engine/search/source-fetcher.spec.ts`
 
@@ -808,6 +818,8 @@ git commit -m "feat(engine): add whitelist-guarded source fetcher"
 ---
 
 ### Task 6: Fact extractor (page text -> candidate Facts via Claude) — Stage 1 part B
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/engine/search/fact-extractor.ts`, `src/engine/search/fact-extractor.spec.ts`
@@ -921,6 +933,8 @@ git commit -m "feat(engine): add Claude-based fact extractor (sources never fabr
 ---
 
 ### Task 7: LiveSearchProvider (SearchProvider real impl) — Stage 1 assembled
+
+**Status:** ✅ Merged to main
 
 > The real `SearchProvider.research`. Owned and tested by this phase. Caps the number of fetches per post (margin protection), restricts to the whitelist, records a `UsageRecord` of `kind:'search'`, and sets `hasFactualClaim=false` with zero facts when nothing trustworthy is found (no fabrication).
 
@@ -1057,6 +1071,8 @@ git commit -m "feat(engine): add LiveSearchProvider (restricted search, usage, n
 
 ### Task 8: UsageRecorder + quota check
 
+**Status:** ✅ Merged to main
+
 > One place that writes `UsageRecord` rows and answers "is this tenant over its cap?". The quota check is what lets the month-plan distinguish `skipped_quota` from `provider_error`.
 
 **Files:**
@@ -1167,6 +1183,8 @@ git commit -m "feat(engine): add UsageRecorder with monthly quota check"
 
 ### Task 9: Rubric builder (Stage 3 input from BrandProfile + limits + prohibitions)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/engine/draft/rubric.builder.ts`, `src/engine/draft/rubric.builder.spec.ts`
 
@@ -1240,6 +1258,8 @@ git commit -m "feat(engine): add rubric builder for critique stage"
 ---
 
 ### Task 10: ClaudeContentProvider (ContentProvider real impl — draft + critique)
+
+**Status:** ✅ Merged to main
 
 > Implements the `ContentProvider` seam with real Claude prompts. `draft` weaves facts and pairs every factual claim with its source (empty `citations` when `factSet.hasFactualClaim===false`). `critique` scores the draft against the rubric. Both go through `ClaudeClient` only.
 
@@ -1398,6 +1418,8 @@ git commit -m "feat(engine): add ClaudeContentProvider (draft + critique behind 
 
 ### Task 11: Draft stage (Stage 2 unit — calls ContentProvider.draft + records usage)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/engine/draft/draft.stage.ts`, `src/engine/draft/draft.stage.spec.ts`
 
@@ -1485,6 +1507,8 @@ git commit -m "feat(engine): add draft stage with usage recording"
 ---
 
 ### Task 12: Critique stage (Stage 3 — quality loop, max 3 rounds, best version + issues)
+
+**Status:** ✅ Merged to main
 
 > Re-drafts and re-critiques until `passed` or the 3-round cap. On cap, returns the highest-scoring draft seen plus that critique's `issues` (visible to the customer). Each critique + redraft records text usage.
 
@@ -1631,6 +1655,8 @@ git commit -m "feat(engine): add critique stage with capped quality loop"
 
 ### Task 13: Image storage service (MinIO upload)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/engine/storage/image-storage.service.ts`, `src/engine/storage/image-storage.service.spec.ts`
 - Modify: `package.json` (add `minio`)
@@ -1729,6 +1755,8 @@ git commit -m "feat(engine): add MinIO image storage service"
 ---
 
 ### Task 14: OpenAI image client + VisionVerifier (thin wrappers — only files importing openai)
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/engine/providers/openai/openai-image.client.ts`, `src/engine/providers/openai/openai-image.client.spec.ts`
@@ -1891,6 +1919,8 @@ git commit -m "feat(engine): add OpenAI image client and vision verifier"
 
 ### Task 15: OverlayRenderer (Satori + Sharp fallback, kit.font)
 
+**Status:** ✅ Merged to main
+
 > Programmatic text overlay used when gpt-image's text is broken (or when the gate made overlay primary). Renders the Arabic text over a background with `kit.font` (default IBM Plex Sans Arabic).
 
 **Files:**
@@ -2009,6 +2039,8 @@ git commit -m "feat(engine): add Satori/Sharp overlay renderer for Arabic text f
 ---
 
 ### Task 16: GptImageProvider (ImageProvider real impl — gate-driven, verify loop, overlay fallback)
+
+**Status:** ✅ Merged to main
 
 > The `ImageProvider` seam, wired to the gate decision. When the gate primary is `gpt-image`: generate with text → verify → regenerate up to `gptImageMaxAttempts` → on persistent breakage, overlay fallback. When the gate primary is `overlay`: generate a background-only image then overlay the text. Records an `image` `UsageRecord` per generation attempt. Sets `method` and `attempts` on the returned `ImageAsset`.
 
@@ -2182,6 +2214,8 @@ git commit -m "feat(engine): add GptImageProvider with gate-driven verify/overla
 
 ### Task 17: Platform formatter (apply platform-limits — twitter-text, hashtags, links, hook)
 
+**Status:** ✅ Merged to main
+
 > Stage 5 part A. Validates and shapes the draft text against `platform-limits` (doc 15): X uses weighted counting via `twitter-text` (280 free), LinkedIn 3000 chars with hook in the first ~140; hashtag counts (LinkedIn 3-5, X 1-2); link rule note. Returns whether the text fits and the trimmed hashtags; never silently truncates body text (an over-limit body signals the assemble stage to re-draft with a tighter constraint).
 
 **Files:**
@@ -2286,6 +2320,8 @@ git commit -m "feat(engine): add platform formatter with twitter-text weighted c
 ---
 
 ### Task 18: Assemble stage (Stage 5 — persist Post at pending_review; over-limit -> re-draft signal)
+
+**Status:** ✅ Merged to main
 
 > Merges text + citations + image into a persisted `Post` (status `pending_review`, `originalText` saved for learning). If the formatted text does not fit the platform limit, throws a typed signal so the pipeline re-runs the draft with a tighter character constraint (error table row: "تجميع | تجاوز الحدود | يُعاد للمرحلة ٢").
 
@@ -2421,6 +2457,8 @@ git commit -m "feat(engine): add assemble stage persisting pending_review post"
 ---
 
 ### Task 19: PipelineService (orchestrate stages 1-5 for one post)
+
+**Status:** ✅ Merged to main
 
 > Runs research → draft → critique → image → assemble for a single `GenerationRequest`. Enforces the error table: a pre-flight quota check yields `skipped_quota` (throws `EngineError('..','skipped_quota')`, no provider work); an image `provider_error` after the verify/overlay chain degrades to a text-only post with a brand mark (no image); an assemble `PlatformLimitExceeded` triggers ONE re-draft pass with a tighter brief before giving up.
 
@@ -2615,6 +2653,8 @@ git commit -m "feat(engine): add PipelineService orchestrating all five stages"
 
 ### Task 20: Saudi calendar distributor (month-plan scheduling)
 
+**Status:** ✅ Merged to main
+
 > Distributes `count` posts across the month, favoring Saudi occasions/seasons when present, otherwise spreading evenly. Pure function — deterministic and unit-tested. (Occasion data is seeded later in Phase 4; here we consume a passed-in occasion list, defaulting to empty.)
 
 **Files:**
@@ -2716,6 +2756,8 @@ git commit -m "feat(engine): add Saudi calendar month-plan distributor"
 ---
 
 ### Task 21: Month-plan processor (BullMQ worker — progress, skipped_quota vs provider_error)
+
+**Status:** ✅ Merged to main
 
 > The async month-plan worker (NFR-2). Iterates the distributed slots, runs the pipeline per post, updates `MonthPlan` progress after each. Per the error table: a `skipped_quota` EngineError marks the post skipped, increments `skippedQuota`, and CONTINUES without retry; a `provider_error` increments `failed` (BullMQ retry handles transient retry at the job level — a single post failure never drops the plan). The whole plan never aborts mid-way.
 
@@ -2874,6 +2916,8 @@ git commit -m "feat(engine): add month-plan processor distinguishing skipped_quo
 
 ### Task 22: Month-plan service (enqueue job + read progress) + BullMQ Worker wiring
 
+**Status:** ✅ Merged to main
+
 > Creates the `MonthPlan` row, enqueues a BullMQ job, and exposes progress. The Worker is registered to call `MonthPlanProcessor.process` with BullMQ's `job.updateProgress`.
 
 **Files:**
@@ -3016,6 +3060,8 @@ git commit -m "feat(engine): add month-plan service with BullMQ enqueue and prog
 
 ### Task 23: Learning service (diff original<->approved -> learnedPreferences)
 
+**Status:** ✅ Merged to main
+
 > Light learning at launch: when a customer edits/approves a post, diff `originalText` vs the approved text, summarize the change via Claude, and append it to `BrandProfile.learnedPreferences` (injected into future `DraftInput`). No automated loop. Skips when text is unchanged.
 
 **Files:**
@@ -3136,6 +3182,8 @@ git commit -m "feat(engine): add light learning service (edit diff -> learnedPre
 ---
 
 ### Task 24: EngineModule wiring + env keys + provider seam bindings
+
+**Status:** ✅ Merged to main
 
 > Wires every engine provider into a Nest module, binds the seam tokens (`ContentProvider` → `ClaudeContentProvider`, `ImageProvider` → `GptImageProvider`, `SearchProvider` → `LiveSearchProvider`) so consumers depend on the interface, supplies the injectable `CandidateUrlProvider` (real impl), and registers the module in `AppModule`. Adds the engine env keys.
 

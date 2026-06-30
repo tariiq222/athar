@@ -73,6 +73,8 @@ test/utils/renderWithProviders.tsx
 
 ### Task 1: Project scaffold (Next.js + TypeScript + Vitest + Tailwind tokens)
 
+**Status:** ✅ Merged to main (M1 foundations, 8f1d1ef)
+
 **Files:**
 - Create: `package.json`, `tsconfig.json`, `next.config.mjs`, `postcss.config.mjs`, `tailwind.config.ts`, `.gitignore`, `.env.example`
 - Create: `vitest.config.ts`, `vitest.setup.ts`
@@ -283,6 +285,8 @@ git commit -m "chore: scaffold Next.js app with vitest, tailwind tokens"
 ---
 
 ### Task 2: i18n dictionaries + LocaleContext + formatNumber
+
+**Status:** ✅ Merged to main (M1 foundations, 8f1d1ef)
 
 **Files:**
 - Create: `i18n/ar.ts`, `i18n/en.ts`, `i18n/index.ts`
@@ -741,6 +745,8 @@ git commit -m "feat: add i18n dictionaries, LocaleContext, formatNumber"
 
 ### Task 3: Shared API & domain types
 
+**Status:** ✅ Merged to main (M1 foundations, 8f1d1ef)
+
 **Files:**
 - Create: `types/api.ts`, `types/domain.ts`
 - Test: `types/domain.spec.ts`
@@ -1078,6 +1084,8 @@ git commit -m "feat: add shared api and domain types for phases 1-6 contracts"
 
 ### Task 4: tokenStore + apiClient (JWT inject, 401 refresh/logout, error normalization)
 
+**Status:** ✅ Merged to main (M1 foundations, 8f1d1ef)
+
 **Files:**
 - Create: `lib/tokenStore.ts`, `lib/apiClient.ts`
 - Test: `lib/tokenStore.spec.ts`, `lib/apiClient.spec.ts`
@@ -1314,6 +1322,8 @@ git commit -m "feat: add tokenStore and apiClient with 401 refresh and error nor
 
 ### Task 5: queryClient + queryKeys + renderWithProviders test util
 
+**Status:** ✅ Merged to main (M1 foundations, 8f1d1ef)
+
 **Files:**
 - Create: `lib/queryClient.ts`, `lib/queryKeys.ts`
 - Create: `test/utils/renderWithProviders.tsx`
@@ -1427,6 +1437,8 @@ git commit -m "feat: add queryClient, queryKeys, and test provider harness"
 
 ### Task 6: ToastContext
 
+**Status:** ✅ Merged to main (M1 foundations, 8f1d1ef)
+
 **Files:**
 - Create: `contexts/ToastContext.tsx`
 - Test: `contexts/ToastContext.spec.tsx`
@@ -1539,6 +1551,8 @@ git commit -m "feat: add ToastContext with accessible live region"
 ---
 
 ### Task 7: SessionContext + finalize renderWithProviders
+
+**Status:** ✅ Merged to main (M1 foundations, 8f1d1ef)
 
 **Files:**
 - Create: `contexts/SessionContext.tsx`
@@ -1672,6 +1686,8 @@ git commit -m "feat: add SessionContext and finalize test provider harness"
 
 ### Task 8: StatusBadge + derivation logic (the single status display path)
 
+**Status:** ✅ Merged to main (M1 foundations, 8f1d1ef)
+
 **Files:**
 - Create: `components/shared/statusBadge.logic.ts`, `components/shared/StatusBadge.tsx`
 - Test: `components/shared/statusBadge.logic.spec.ts`, `components/shared/StatusBadge.spec.tsx`
@@ -1794,6 +1810,8 @@ git commit -m "feat: add StatusBadge as single status display path with derivati
 ---
 
 ### Task 9: CharCounter + weighted counting logic (twitter-text for X)
+
+**Status:** ⏳ Pending — M2/M2.1
 
 **Files:**
 - Create: `lib/platformLimits.ts`, `components/shared/charCounter.logic.ts`, `components/shared/CharCounter.tsx`
@@ -1956,6 +1974,8 @@ git commit -m "feat: add CharCounter with twitter-text weighted counting for X"
 ---
 
 ### Task 10: State components (Loading / Empty / Error) + DirectionalIcon
+
+**Status:** ⏳ Pending — M2/M2.1
 
 **Files:**
 - Create: `components/shared/states/LoadingState.tsx`, `components/shared/states/EmptyState.tsx`, `components/shared/states/ErrorState.tsx`, `components/shared/DirectionalIcon.tsx`
@@ -2131,6 +2151,8 @@ git commit -m "feat: add loading/empty/error state components and DirectionalIco
 ---
 
 ### Task 11: PostCard + SourceList + ImagePreview
+
+**Status:** ⏳ Pending — M2/M2.1
 
 **Files:**
 - Create: `components/shared/PostCard.tsx`, `components/shared/SourceList.tsx`, `components/shared/ImagePreview.tsx`
@@ -2330,6 +2352,8 @@ git commit -m "feat: add PostCard, SourceList, and ImagePreview shared component
 
 ### Task 12: CalendarGrid (RTL grid desktop, vertical day list mobile)
 
+**Status:** ⏳ Pending — M2/M2.1
+
 **Files:**
 - Create: `components/shared/CalendarGrid.tsx`
 - Test: `components/shared/CalendarGrid.spec.tsx`
@@ -2470,6 +2494,8 @@ git commit -m "feat: add CalendarGrid with occasions layer and mobile reschedule
 ---
 
 ### Task 13: services/ layer (all seven domains)
+
+**Status:** ⏳ Pending — M2/M2.1
 
 **Files:**
 - Create: `services/auth.ts`, `services/brand.ts`, `services/content.ts`, `services/posts.ts`, `services/calendar.ts`, `services/export.ts`, `services/billing.ts`
@@ -2717,6 +2743,8 @@ git commit -m "feat: add services layer wrapping all seven backend domains"
 ---
 
 ### Task 14: hooks/ layer (server-state wrappers with keyed invalidation)
+
+**Status:** ⏳ Pending — M2/M2.1
 
 **Files:**
 - Create: `hooks/useAuth.ts`, `hooks/useSession.ts`, `hooks/useBrandProfile.ts`, `hooks/useBrandAnalysis.ts`, `hooks/useGeneration.ts`, `hooks/useMonthPlan.ts`, `hooks/usePosts.ts`, `hooks/usePost.ts`, `hooks/useApprovePost.ts`, `hooks/useCalendar.ts`, `hooks/useReschedule.ts`, `hooks/useExportAssets.ts`, `hooks/useMarkPublished.ts`, `hooks/useBilling.ts`, `hooks/useInvoices.ts`
@@ -3090,6 +3118,8 @@ git commit -m "feat: add hooks layer with server-state queries, mutations, and m
 
 ### Task 15: Root layout + AppProviders + dir/lang + IBM Plex Sans Arabic font
 
+**Status:** ⏳ Pending — M2/M2.1
+
 **Files:**
 - Create: `app/layout.tsx`, `app/AppProviders.tsx`, `app/not-found.tsx`
 - Test: `app/AppProviders.spec.tsx`
@@ -3218,6 +3248,8 @@ git commit -m "feat: add root layout with rtl/ar, plex arabic font, and provider
 ---
 
 ### Task 16: AuthGuard + AppShell (BottomNav / SideNav / Header) + route group layouts
+
+**Status:** ⏳ Pending — M2/M2.1
 
 **Files:**
 - Create: `components/layout/AuthGuard.tsx`, `components/layout/AppShell.tsx`, `components/layout/BottomNav.tsx`, `components/layout/SideNav.tsx`, `components/layout/Header.tsx`
@@ -3478,6 +3510,8 @@ git commit -m "feat: add AuthGuard, AppShell, nav, and route-group layouts"
 
 ### Task 17: Login + Register screens (#1, #2)
 
+**Status:** ⏳ Pending — M2/M2.1
+
 **Files:**
 - Create: `app/(auth)/login/page.tsx`, `app/(auth)/register/page.tsx`
 - Test: `app/(auth)/login/login.spec.tsx`
@@ -3689,6 +3723,8 @@ git commit -m "feat: add login and register screens with validation and arabic e
 ---
 
 ### Task 18: Onboarding wizard screen (#3)
+
+**Status:** ⏳ Pending — M2/M2.1
 
 **Files:**
 - Create: `app/(app)/onboarding/page.tsx`
@@ -3938,6 +3974,8 @@ git commit -m "feat: add onboarding wizard with resumable progress"
 
 ### Task 19: Dashboard (#4) + Posts list (#5) + onboarding-incomplete guard
 
+**Status:** ⏳ Pending — M2/M2.1
+
 **Files:**
 - Create: `app/(app)/dashboard/page.tsx`, `app/(app)/posts/page.tsx`
 - Create: `components/shared/OnboardingGate.tsx`
@@ -4173,6 +4211,8 @@ git commit -m "feat: add dashboard, posts list, and onboarding gate"
 
 ### Task 20: Post editor screen (#6)
 
+**Status:** ⏳ Pending — M2/M2.1
+
 **Files:**
 - Create: `app/(app)/posts/[postId]/page.tsx`
 - Test: `app/(app)/posts/[postId]/editor.spec.tsx`
@@ -4352,6 +4392,8 @@ git commit -m "feat: add post editor with sources, issues, char counter, and act
 ---
 
 ### Task 21: Generate screen (#7 — single post + month-plan async progress)
+
+**Status:** ⏳ Pending — M2/M2.1
 
 **Files:**
 - Create: `app/(app)/generate/page.tsx`
@@ -4557,6 +4599,8 @@ git commit -m "feat: add generate screen with single post and async month-plan p
 
 ### Task 22: Calendar screen (#8)
 
+**Status:** ⏳ Pending — M2/M2.1
+
 **Files:**
 - Create: `app/(app)/calendar/page.tsx`
 - Test: `app/(app)/calendar/calendar.spec.tsx`
@@ -4680,6 +4724,8 @@ git commit -m "feat: add calendar screen with month nav and reschedule"
 ---
 
 ### Task 23: Manual publish screen (#9)
+
+**Status:** ⏳ Pending — M2/M2.1
 
 **Files:**
 - Create: `app/(app)/publish/[postId]/page.tsx`
@@ -4836,6 +4882,8 @@ git commit -m "feat: add manual publish screen with copy, download, deep link, m
 ---
 
 ### Task 24: Billing screen (#10) + Moyasar callback + quota block
+
+**Status:** ⏳ Pending — M2/M2.1
 
 **Files:**
 - Create: `app/(app)/billing/page.tsx`, `app/(app)/billing/callback/page.tsx`
@@ -5055,6 +5103,8 @@ git commit -m "feat: add billing screen, Moyasar callback, and quota block"
 
 ### Task 25: Settings (#11) + Account profiles (#12)
 
+**Status:** ⏳ Pending — M2/M2.1
+
 **Files:**
 - Create: `app/(app)/settings/page.tsx`, `app/(app)/settings/accounts/page.tsx`
 - Test: `app/(app)/settings/settings.spec.tsx`, `app/(app)/settings/accounts/accounts.spec.tsx`
@@ -5254,6 +5304,8 @@ git commit -m "feat: add settings and account profiles screens"
 ---
 
 ### Task 26: Full verification (typecheck, full test run, production build)
+
+**Status:** ⏳ Pending — M2/M2.1
 
 **Files:**
 - Modify: none (verification + fixes only)

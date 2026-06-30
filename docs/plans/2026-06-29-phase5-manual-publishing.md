@@ -65,6 +65,8 @@ src/app.module.ts                                      # MODIFY: register both m
 
 ### Task 1: Dependencies + BullMQ root registration
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Modify: `package.json` (deps)
 - Modify: `src/app.module.ts`
@@ -147,6 +149,8 @@ git commit -m "chore: add bullmq, twitter-text, nodemailer and bull root module"
 
 ### Task 2: Prisma models Reminder + Notification (NEW migration)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Modify: `prisma/schema.prisma`
 
@@ -210,6 +214,8 @@ git commit -m "feat: add Reminder and Notification prisma models via new migrati
 ---
 
 ### Task 3: Shared types + error helpers
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/publishing/publishing.types.ts`
@@ -427,6 +433,8 @@ git commit -m "feat: add phase-5 shared types and error helpers"
 
 ### Task 4: ExportFormatter service (platform limits + twitter-text)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/publishing/export-formatter.service.ts`
 - Test: `src/publishing/export-formatter.service.spec.ts`
@@ -595,6 +603,8 @@ git commit -m "feat: add ExportFormatter applying platform limits and twitter-te
 
 ### Task 5: DeepLinkBuilder service
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/publishing/deep-link-builder.service.ts`
 - Test: `src/publishing/deep-link-builder.service.spec.ts`
@@ -677,6 +687,8 @@ git commit -m "feat: add DeepLinkBuilder for linkedin and x composer links"
 ---
 
 ### Task 6: ExportService (assembles ExportPayload, tenant-scoped)
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/publishing/export.service.ts`
@@ -871,6 +883,8 @@ git commit -m "feat: add ExportService assembling tenant-scoped ExportPayload"
 
 ### Task 7: InAppChannel (writes Notification row)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/notifications/in-app.channel.ts`
 - Test: `src/notifications/in-app.channel.spec.ts`
@@ -992,6 +1006,8 @@ git commit -m "feat: add InAppChannel writing reminder Notification rows"
 ---
 
 ### Task 8: EmailChannel (Arabic RTL transactional email)
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/notifications/email.channel.ts`
@@ -1165,6 +1181,8 @@ git commit -m "feat: add EmailChannel with arabic rtl transactional template"
 
 ### Task 9: NotificationDispatcher (independent per-channel fan-out)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/notifications/notification-dispatcher.service.ts`
 - Test: `src/notifications/notification-dispatcher.service.spec.ts`
@@ -1290,6 +1308,8 @@ git commit -m "feat: add NotificationDispatcher with isolated per-channel delive
 ---
 
 ### Task 10: NotificationsService + NotificationsController (list + read)
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/notifications/notifications.service.ts`
@@ -1503,6 +1523,8 @@ git commit -m "feat: add notifications list and mark-read endpoints (tenant scop
 
 ### Task 11: NotificationModule (wire channels + dispatcher + transporter)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/notifications/notifications.module.ts`
 - Modify: `src/app.module.ts`
@@ -1620,6 +1642,8 @@ git commit -m "feat: wire NotificationModule with channels, dispatcher and trans
 ---
 
 ### Task 12: ReminderService (create/list/cancel + enqueue/dequeue)
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/publishing/reminder.service.ts`
@@ -1878,6 +1902,8 @@ git commit -m "feat: add ReminderService with delayed jobs and cancellation"
 
 ### Task 13: ReminderProcessor (BullMQ worker → dispatcher)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/publishing/reminder.processor.ts`
 - Test: `src/publishing/reminder.processor.spec.ts`
@@ -2067,6 +2093,8 @@ git commit -m "feat: add ReminderProcessor delivering matured reminders via disp
 
 ### Task 14: MarkPublishedService (approved → published + cancel reminders)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/publishing/mark-published.service.ts`
 - Test: `src/publishing/mark-published.service.spec.ts`
@@ -2230,6 +2258,8 @@ git commit -m "feat: add MarkPublishedService and post.publishedAt migration"
 
 ### Task 15: DTOs (validation) for publishing requests
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/publishing/dto/create-reminder.dto.ts`
 - Create: `src/publishing/dto/mark-published.dto.ts`
@@ -2343,6 +2373,8 @@ git commit -m "feat: add publishing request DTOs and global validation pipe"
 ---
 
 ### Task 16: PublishingController (the 5 routes)
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/publishing/publishing.controller.ts`
@@ -2513,6 +2545,8 @@ git commit -m "feat: add PublishingController with export, reminders, mark-publi
 
 ### Task 17: PublishingModule (wire everything) + app registration
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/publishing/publishing.module.ts`
 - Modify: `src/app.module.ts`
@@ -2605,6 +2639,8 @@ git commit -m "feat: wire PublishingModule and register in app module"
 ---
 
 ### Task 18: Env example + e2e smoke for the export route
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Modify: `.env.example`

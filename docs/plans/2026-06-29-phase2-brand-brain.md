@@ -68,6 +68,8 @@ src/app.module.ts                                     # MODIFY: import BrandModu
 
 ### Task 1: Extend engine seams with `summarize` / `fetch` + DI tokens + fakes
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Modify: `src/engine/providers/content-provider.interface.ts`
 - Modify: `src/engine/providers/search-provider.interface.ts`
@@ -306,6 +308,8 @@ git commit -m "feat: extend content/search seams with summarize and fetch + fake
 
 ### Task 2: Phase-3 auth stubs (`@CurrentTenant`, guards)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/auth/current-tenant.decorator.ts`
 - Create: `src/auth/guards.ts`
@@ -422,6 +426,8 @@ git commit -m "feat: add phase-3 auth stubs (CurrentTenant decorator + guards)"
 
 ### Task 3: Validation pipe + consistent error envelope
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/common/dto-validation.ts`
 - Test: `src/common/dto-validation.spec.ts`
@@ -516,6 +522,8 @@ git commit -m "feat: add validation pipe and consistent error envelope"
 
 ### Task 4: Brand analyze config (caps + defaults, one module)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/brand/brand.config.ts`
 - Test: `src/brand/brand.config.spec.ts`
@@ -578,6 +586,8 @@ git commit -m "feat: add brand analyze config caps and brand-kit defaults"
 ---
 
 ### Task 5: Phase types + class-validator DTOs
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/brand/types.ts`
@@ -910,6 +920,8 @@ git commit -m "feat: add brand phase types and class-validator DTOs"
 
 ### Task 6: `buildQuestions` (pure function)
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Create: `src/brand/build-questions.ts`
 - Test: `src/brand/build-questions.spec.ts`
@@ -1079,6 +1091,8 @@ git commit -m "feat: add pure buildQuestions deriving confirmation questions"
 ---
 
 ### Task 7: `OnboardingService.analyze` (fetch + summarize, caps, UsageRecord, consent, failure path)
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/brand/onboarding.service.ts`
@@ -1389,6 +1403,8 @@ git commit -m "feat: add OnboardingService.analyze with caps, usage records, con
 
 ### Task 8: `OnboardingService.commit` (persist BrandProfile + AccountProfile[])
 
+**Status:** ✅ Merged to main
+
 **Files:**
 - Modify: `src/brand/onboarding.service.ts`
 - Modify: `src/brand/onboarding.service.spec.ts`
@@ -1537,6 +1553,8 @@ git commit -m "feat: add OnboardingService.commit persisting profile and account
 ---
 
 ### Task 9: `BrandController` (4 routes, guards, tenant scoping, 404 on cross-tenant)
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/brand/brand.controller.ts`
@@ -1768,6 +1786,8 @@ git commit -m "feat: add BrandController with 4 tenant-scoped routes and 404 iso
 ---
 
 ### Task 10: Wire `BrandModule` + global validation pipe; boot check
+
+**Status:** ✅ Merged to main
 
 **Files:**
 - Create: `src/brand/brand.module.ts`
