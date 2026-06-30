@@ -22,6 +22,10 @@ env:
   # DB / Redis (port 5432/6379 are the CI service port mapping; GitHub Actions
   # services are reachable on localhost).
   DATABASE_URL: postgresql://athar:athar@localhost:5432/athar?schema=public
+  # Shadow DB for `prisma migrate diff --from-migrations` (Prisma 7 refuses
+  # to use the same DB as the main one). postgres-shadow service exposes
+  # port 5433 → 5432 internally; we connect to localhost:5433.
+  SHADOW_DATABASE_URL: postgresql://athar:athar@localhost:5433/athar_shadow?schema=public
   REDIS_HOST: localhost
   REDIS_PORT: '6379'
   # JWT — ≥32 chars to satisfy Zod min(32) check.
@@ -76,6 +80,20 @@ jobs:
           POSTGRES_PASSWORD: athar
           POSTGRES_DB: athar
         ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+      # Required by `prisma migrate diff --from-migrations` (the drift check in
+      # the lint + typecheck + test job). Prisma 7 refuses to use the same
+      # connection as the main DB for shadowing; provision a second DB on
+      # a separate port.
+      postgres-shadow:
+        image: postgres:16
+        env:
+          POSTGRES_USER: athar
+          POSTGRES_PASSWORD: athar
+          POSTGRES_DB: athar_shadow
+        ports: ["5433:5432"]
         options: >-
           --health-cmd pg_isready --health-interval 10s
           --health-timeout 5s --health-retries 5
@@ -179,6 +197,20 @@ jobs:
           POSTGRES_PASSWORD: athar
           POSTGRES_DB: athar
         ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+      # Required by `prisma migrate diff --from-migrations` (the drift check in
+      # the lint + typecheck + test job). Prisma 7 refuses to use the same
+      # connection as the main DB for shadowing; provision a second DB on
+      # a separate port.
+      postgres-shadow:
+        image: postgres:16
+        env:
+          POSTGRES_USER: athar
+          POSTGRES_PASSWORD: athar
+          POSTGRES_DB: athar_shadow
+        ports: ["5433:5432"]
         options: >-
           --health-cmd pg_isready --health-interval 10s
           --health-timeout 5s --health-retries 5
