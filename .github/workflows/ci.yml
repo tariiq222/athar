@@ -149,7 +149,7 @@ jobs:
           set -e
           diff_output=$(npx prisma migrate diff \
             --from-migrations prisma/migrations \
-            --to-schema-datamodel prisma/schema.prisma \
+            --to-schema prisma/schema.prisma \
             --script)
           if [ -n "$diff_output" ]; then
             echo "Schema drift detected — migrations out of sync with schema.prisma:"
