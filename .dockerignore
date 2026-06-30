@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.env
+.env.*
+coverage
+*.log
+.claude
+.superpowers
+.kilocode
+.github
+docs
+test
+README.md
+CLAUDE.md
