@@ -1,4 +1,5 @@
 import { GptImageProvider } from './gpt-image.provider';
+import { TenantContextService } from '../../../common/tenant-context.service';
 import type { BrandKit } from '../../types';
 
 jest.mock('../../image/image-gate.config', () => ({
@@ -22,12 +23,13 @@ function deps(over: Partial<Record<string, unknown>> = {}) {
       upload: jest.fn().mockResolvedValue('http://minio/athar-images/p.png'),
     },
     usage: { record: jest.fn().mockResolvedValue(undefined) },
+    tenantContext: new TenantContextService(),
     ...over,
   };
 }
 
 describe('GptImageProvider', () => {
-  it('returns gpt-image method on first verify success', async () => {
+  it('returns gpt-image method on first verify success and records usage with the active tenant', async () => {
     const d = deps();
     (d.verifier.verify as jest.Mock).mockResolvedValue({
       verifiedText: 'ابدأ',
@@ -39,9 +41,11 @@ describe('GptImageProvider', () => {
       d.overlay as any,
       d.storage as any,
       d.usage as any,
+      d.tenantContext,
     );
-    p.setTenant('tn');
-    const asset = await p.generateImage('ابدأ', kit, 'linkedin');
+    const asset = await d.tenantContext.runWithTenant('tn', () =>
+      p.generateImage('ابدأ', kit, 'linkedin'),
+    );
     expect(asset).toEqual({
       url: 'http://minio/athar-images/p.png',
       verifiedText: 'ابدأ',
@@ -50,6 +54,39 @@ describe('GptImageProvider', () => {
     });
     expect(d.usage.record).toHaveBeenCalledWith(
       expect.objectContaining({ tenantId: 'tn', kind: 'image' }),
+    );
+  });
+
+  it('does not expose setTenant on the seam — callers cannot mutate tenantId', () => {
+    const d = deps();
+    const p = new GptImageProvider(
+      d.imageClient as any,
+      d.verifier as any,
+      d.overlay as any,
+      d.storage as any,
+      d.usage as any,
+      d.tenantContext,
+    );
+    expect((p as unknown as { setTenant?: unknown }).setTenant).toBeUndefined();
+  });
+
+  it('records usage as "unknown" when called outside any tenant context', async () => {
+    const d = deps();
+    (d.verifier.verify as jest.Mock).mockResolvedValue({
+      verifiedText: 'ابدأ',
+      matches: true,
+    });
+    const p = new GptImageProvider(
+      d.imageClient as any,
+      d.verifier as any,
+      d.overlay as any,
+      d.storage as any,
+      d.usage as any,
+      d.tenantContext,
+    );
+    await p.generateImage('ابدأ', kit, 'linkedin');
+    expect(d.usage.record).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: 'unknown', kind: 'image' }),
     );
   });
 
@@ -65,9 +102,11 @@ describe('GptImageProvider', () => {
       d.overlay as any,
       d.storage as any,
       d.usage as any,
+      d.tenantContext,
     );
-    p.setTenant('tn');
-    const asset = await p.generateImage('ابدأ', kit, 'x');
+    const asset = await d.tenantContext.runWithTenant('tn', () =>
+      p.generateImage('ابدأ', kit, 'x'),
+    );
     expect(asset.method).toBe('overlay-fallback');
     expect(asset.verifiedText).toBe('ابدأ'); // intended text used for overlay
     expect(asset.attempts).toBe(3);
@@ -88,9 +127,11 @@ describe('GptImageProvider', () => {
       d.overlay as any,
       d.storage as any,
       d.usage as any,
+      d.tenantContext,
     );
-    p.setTenant('tn');
-    const asset = await p.generateImage('ابدأ', kit, 'linkedin');
+    const asset = await d.tenantContext.runWithTenant('tn', () =>
+      p.generateImage('ابدأ', kit, 'linkedin'),
+    );
     expect(asset.method).toBe('overlay-fallback');
     expect(d.verifier.verify).not.toHaveBeenCalled();
     expect(asset.attempts).toBe(1);

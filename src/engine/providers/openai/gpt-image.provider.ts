@@ -9,6 +9,7 @@ import { OverlayRenderer } from './overlay-renderer';
 import { ImageStorageService } from '../../storage/image-storage.service';
 import { UsageRecorder } from '../../usage/usage.recorder';
 import { IMAGE_GATE_DECISION } from '../../image/image-gate.config';
+import { TenantContextService } from '../../../common/tenant-context.service';
 
 /**
  * The real ImageProvider. Honors the committed IMAGE_GATE_DECISION
@@ -20,25 +21,20 @@ import { IMAGE_GATE_DECISION } from '../../image/image-gate.config';
  *   - gate primary = overlay:   generate a text-free background, then
  *     render the Arabic text over it (skips verification entirely).
  *
- * The seam signature lacks tenantId; the pipeline sets it per-call
- * via setTenant(...) before invoking generateImage so UsageRecord rows
- * carry the right tenant.
+ * The seam signature intentionally omits `tenantId`; PipelineService
+ * wraps each per-tenant call in `tenantContext.runWithTenant(...)`
+ * so UsageRecord rows carry the right tenant without polluting the seam.
  */
 @Injectable()
 export class GptImageProvider implements ImageProvider {
-  private tenantId = 'unknown';
-
   constructor(
     private readonly imageClient: OpenAiImageClient,
     private readonly verifier: VisionVerifier,
     private readonly overlay: OverlayRenderer,
     private readonly storage: ImageStorageService,
     private readonly usage: UsageRecorder,
+    private readonly tenantContext: TenantContextService,
   ) {}
-
-  setTenant(tenantId: string): void {
-    this.tenantId = tenantId;
-  }
 
   async generateImage(
     brief: string,
@@ -113,7 +109,7 @@ export class GptImageProvider implements ImageProvider {
 
   private async recordImageUsage(): Promise<void> {
     await this.usage.record({
-      tenantId: this.tenantId,
+      tenantId: this.tenantContext.getTenantId(),
       kind: 'image',
       units: 1,
       costUsd: 0,
