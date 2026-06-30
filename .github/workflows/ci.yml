@@ -1,7 +1,72 @@
 name: ci
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Common test environment — every job that talks to infra (db/redis/minio)
+# needs these set. Kept at workflow level so jobs inherit them.
+env:
+  NODE_ENV: test
+  PORT: '3000'
+  LOG_LEVEL: info
+  # DB / Redis (port 5432/6379 are the CI service port mapping; GitHub Actions
+  # services are reachable on localhost).
+  DATABASE_URL: postgresql://athar:athar@localhost:5432/athar?schema=public
+  REDIS_HOST: localhost
+  REDIS_PORT: '6379'
+  # JWT — ≥32 chars to satisfy Zod min(32) check.
+  JWT_ACCESS_SECRET: test-access-secret-please-change-32chars
+  JWT_REFRESH_SECRET: test-refresh-secret-please-change-32chars
+  JWT_ACCESS_TTL: 15m
+  JWT_REFRESH_TTL: 7d
+  # Moyasar (Phase 6). Webhook secret optional outside prod.
+  MOYASAR_SECRET_KEY: sk_test_dummy
+  MOYASAR_PUBLISHABLE_KEY: pk_test_dummy
+  MOYASAR_WEBHOOK_SECRET: whsec_test_dummy
+  # AI providers (Phase 1 engine seams).
+  OPENROUTER_API_KEY: sk-or-v1-test
+  OPENAI_API_KEY: sk-test
+  OPENAI_IMAGE_MODEL: gpt-image-1
+  OPENAI_VISION_MODEL: gpt-4o-mini
+  ANTHROPIC_API_KEY: test-anthropic-key
+  ANTHROPIC_MODEL: claude-sonnet-4-5
+  # MinIO / S3 (CI service on 9000).
+  MINIO_ENDPOINT: localhost
+  MINIO_PORT: '9000'
+  MINIO_USE_SSL: 'false'
+  MINIO_ACCESS_KEY: athar
+  MINIO_SECRET_KEY: athar12345
+  MINIO_BUCKET: athar-images
+  # SMTP (Reminder notifier; NODE_ENV=test bypasses SMTP_SECURE strict).
+  SMTP_HOST: localhost
+  SMTP_PORT: '587'
+  SMTP_USER: test-smtp-user
+  SMTP_PASS: test-smtp-pass
+  SMTP_SECURE: 'false'
+  # Engine + throttle knobs.
+  LLM_REGION: any
+  IMAGE_GATE_PRIMARY_METHOD: overlay
+  IMAGE_GATE_MAX_ATTEMPTS: '2'
+  THROTTLE_TTL_MS: '60000'
+  THROTTLE_LIMIT: '10'
+  ENGINE_TRUSTED_DOMAINS_EXTRA: ''
+
 jobs:
-  build:
+  # ---------------------------------------------------------------
+  # Job 1: lint + typecheck + unit tests + prisma drift
+  # ---------------------------------------------------------------
+  lint-typecheck-test:
+    name: lint + typecheck + test
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -14,15 +79,141 @@ jobs:
         options: >-
           --health-cmd pg_isready --health-interval 10s
           --health-timeout 5s --health-retries 5
-    env:
-      DATABASE_URL: postgresql://athar:athar@localhost:5432/athar?schema=public
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s
+          --health-timeout 5s --health-retries 5
+      minio:
+        image: minio/minio
+        env:
+          MINIO_ROOT_USER: athar
+          MINIO_ROOT_PASSWORD: athar12345
+        ports: ["9000:9000", "9001:9001"]
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm }
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npx prisma migrate deploy
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (npm cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Apply migrations (test DB)
+        run: npx prisma migrate deploy
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (with coverage)
+        run: npm test -- --coverage
+
+      - name: Prisma schema-drift check
+        run: |
+          set -e
+          diff_output=$(npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema-datamodel prisma/schema.prisma \
+            --script)
+          if [ -n "$diff_output" ]; then
+            echo "Schema drift detected — migrations out of sync with schema.prisma:"
+            echo "$diff_output"
+            exit 1
+          fi
+          echo "No schema drift."
+
+  # ---------------------------------------------------------------
+  # Job 2: build (sanity — NestJS compiles cleanly)
+  # ---------------------------------------------------------------
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (npm cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Build (nest build)
+        run: npm run build
+
+  # ---------------------------------------------------------------
+  # Job 3: E2E (auth, billing, isolation, publishing, migration-drift)
+  # ---------------------------------------------------------------
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: athar
+          POSTGRES_PASSWORD: athar
+          POSTGRES_DB: athar
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s
+          --health-timeout 5s --health-retries 5
+      minio:
+        image: minio/minio
+        env:
+          MINIO_ROOT_USER: athar
+          MINIO_ROOT_PASSWORD: athar12345
+        ports: ["9000:9000", "9001:9001"]
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (npm cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Apply migrations (test DB)
+        run: npx prisma migrate deploy
+
+      - name: Build (required for e2e to load compiled AppModule)
+        run: npm run build
+
+      - name: Run E2E suite
+        run: npm run test:e2e
