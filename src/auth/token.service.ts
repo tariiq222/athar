@@ -41,6 +41,7 @@ export class TokenService {
       refreshToken,
       tokenType: 'Bearer',
       expiresIn: this.ttlToSeconds(accessTtl),
+      tenantId,
     };
   }
 

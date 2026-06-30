@@ -7,27 +7,8 @@
 //
 // Gated on DATABASE_URL (same pattern as auth.e2e-spec.ts) — the suite skips
 // when the live stack is not available; CI runs it against docker-compose.
-process.env.JWT_ACCESS_SECRET ||= 'test-access-secret';
-process.env.JWT_REFRESH_SECRET ||= 'test-refresh-secret';
-process.env.JWT_ACCESS_TTL ||= '15m';
-process.env.JWT_REFRESH_TTL ||= '7d';
-process.env.TRIAL_DURATION_DAYS ||= '7';
-process.env.PURGE_RETENTION_DAYS ||= '30';
-process.env.DATABASE_URL ||= 'postgresql://athar:athar@localhost:5442/athar?schema=public';
-process.env.OPENAI_API_KEY ||= 'test-openai-key';
-process.env.OPENAI_IMAGE_MODEL ||= 'gpt-image-1';
-process.env.OPENAI_VISION_MODEL ||= 'gpt-4o-mini';
-process.env.ANTHROPIC_API_KEY ||= 'test-anthropic-key';
-process.env.ANTHROPIC_MODEL ||= 'claude-sonnet-4-5';
-process.env.MINIO_ENDPOINT ||= 'localhost';
-process.env.MINIO_PORT ||= '9000';
-process.env.MINIO_ACCESS_KEY ||= 'test-minio';
-process.env.MINIO_SECRET_KEY ||= 'test-minio-secret';
-process.env.MINIO_BUCKET ||= 'athar-images';
-process.env.OPENROUTER_API_KEY ||= 'test-openrouter-key';
-
-// The webhook route compares the incoming body.secret_token to
-// MOYASAR_WEBHOOK_SECRET using a constant-time check. Setting it to a known
+// Shared env defaults so the e2e can boot AppModule without a real .env.
+import './e2e-env-setup';
 // value lets the bad-signature test be deterministic — any non-matching
 // token is guaranteed to be rejected.
 process.env.MOYASAR_WEBHOOK_SECRET ||= 'test-webhook-secret';
@@ -47,6 +28,7 @@ interface AuthTokens {
   refreshToken: string;
   tokenType: string;
   expiresIn: number;
+  tenantId: string;
 }
 
 interface SubscriptionResponse {

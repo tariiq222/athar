@@ -48,6 +48,7 @@ function makeService(prisma: any) {
       refreshToken: `ref.${sub}.${Math.random()}`,
       tokenType: 'Bearer' as const,
       expiresIn: 900,
+      tenantId,
     })),
     verifyRefresh: jest.fn(async (t: string) => {
       const [, sub] = t.split('.');
