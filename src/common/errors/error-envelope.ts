@@ -1,4 +1,5 @@
 import { HttpException } from '@nestjs/common';
+import { kindLabel } from '../usage-labels';
 
 export interface ErrorEnvelope {
   statusCode: number;
@@ -227,10 +228,6 @@ export const amountMismatch = (actual: number, allowed: number[]) =>
 // or the referenced user does not exist — i.e. a forged or stale token.
 export const securityViolation = (reason: string) =>
   new AppError(403, reason, 'مخالفة أمنية — راجع السجلات.');
-
-function kindLabel(kind: string): string {
-  return { text: 'المسودّات', image: 'الصور', search: 'عمليات البحث' }[kind] ?? kind;
-}
 
 /**
  * Sprint A post-launch: unified error envelope.
