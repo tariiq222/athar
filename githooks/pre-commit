@@ -47,4 +47,10 @@ if ! npm run typecheck --silent 2>&1; then
 fi
 ok typecheck
 
+# 4) Format check (catches unformatted code before push; mirror CI)
+if ! npm run format:check --silent 2>&1; then
+  fail "formatting drift — run \`npm run format\` to fix"
+fi
+ok format
+
 log "${GRN}✓ pre-commit passed${NC}"

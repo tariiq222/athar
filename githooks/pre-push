@@ -34,6 +34,12 @@ log "  tsc --noEmit"
 npm run typecheck --silent 2>&1 | tail -3
 ok typecheck
 
+log "  prettier --check"
+if ! npm run format:check --silent 2>&1 | tail -3; then
+  fail "formatting drift — run \`npm run format\` to fix"
+fi
+ok format
+
 log "  jest (unit tests)"
 if ! npx jest --no-coverage --silent 2>&1 | tail -5; then
   fail "tests failed — run \`npm test\` to see errors"

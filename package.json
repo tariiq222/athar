@@ -10,7 +10,13 @@
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "typecheck": "tsc --noEmit",
+    "verify": "npm run lint && npm run typecheck && npm run format:check && npm test",
+    "hooks:install": "git config core.hooksPath githooks && chmod +x githooks/pre-commit githooks/pre-push && echo 'githooks installed (pre-commit + pre-push mirror CI)'",
+    "prepare": "node -e \"const fs=require('fs');if(fs.existsSync('./githooks')){require('child_process').execSync('git config core.hooksPath githooks',{stdio:'inherit'})}\"",
     "seed:occasions": "tsx prisma/seeds/hijri-occasion.seeder.ts",
     "seed:occasions:dev": "cross-env DATABASE_URL=postgresql://athar:athar@localhost:5442/athar?schema=public tsx prisma/seeds/hijri-occasion.seeder.ts"
   },
