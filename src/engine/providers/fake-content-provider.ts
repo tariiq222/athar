@@ -1,4 +1,9 @@
-import type { ContentProvider, DraftInput, SummarizeInput, SummaryResult } from './content-provider.interface';
+import type {
+  ContentProvider,
+  DraftInput,
+  SummarizeInput,
+  SummaryResult,
+} from './content-provider.interface';
 import type { Draft, Rubric, CritiqueResult } from '../types';
 
 // Deterministic double for tests/dev. Empty input -> low confidence, empty suggestions.

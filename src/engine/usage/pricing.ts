@@ -13,11 +13,7 @@
  *   - gpt-image-1:       ~$0.04 per image (flat; w/h/quality ignored for now)
  */
 
-export type Model =
-  | 'claude-3-5-sonnet'
-  | 'claude-3-5-haiku'
-  | 'gpt-image-1'
-  | 'gpt-4o-mini';
+export type Model = 'claude-3-5-sonnet' | 'claude-3-5-haiku' | 'gpt-image-1' | 'gpt-4o-mini';
 
 const PER_1K: Record<Model, { input: number; output: number }> = {
   'claude-3-5-sonnet': { input: 0.003, output: 0.015 },
@@ -26,20 +22,11 @@ const PER_1K: Record<Model, { input: number; output: number }> = {
   'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
 };
 
-export function textCostUsd(
-  model: Model,
-  inputTokens: number,
-  outputTokens: number,
-): number {
+export function textCostUsd(model: Model, inputTokens: number, outputTokens: number): number {
   const p = PER_1K[model];
   return (inputTokens / 1000) * p.input + (outputTokens / 1000) * p.output;
 }
 
-export function imageCostUsd(
-  model: Model,
-  _w: number,
-  _h: number,
-  attempts: number,
-): number {
+export function imageCostUsd(model: Model, _w: number, _h: number, attempts: number): number {
   return PER_1K[model].input * attempts;
 }

@@ -42,7 +42,8 @@ export class FactExtractor {
       kind: 'text',
       units: res.inputTokens + res.outputTokens,
       costUsd: textCostUsd(
-        (model.includes('haiku') ? 'claude-3-5-haiku' : 'claude-3-5-sonnet') as 'claude-3-5-sonnet' | 'claude-3-5-haiku',
+        (model.includes('haiku') ? 'claude-3-5-haiku' : 'claude-3-5-sonnet') as
+          'claude-3-5-sonnet' | 'claude-3-5-haiku',
         res.inputTokens,
         res.outputTokens,
       ),
@@ -67,10 +68,7 @@ export class FactExtractor {
         claim: p.claim,
         sourceUrl: page.url,
         sourceTitle: page.title,
-        confidence: Math.max(
-          0,
-          Math.min(1, typeof p.confidence === 'number' ? p.confidence : 0.5),
-        ),
+        confidence: Math.max(0, Math.min(1, typeof p.confidence === 'number' ? p.confidence : 0.5)),
       }));
   }
 }

@@ -51,9 +51,7 @@ export class LearningService {
     const brand = await this.prisma.brandProfile.findFirstOrThrow({
       where: { id: post.brandProfileId, tenantId },
     });
-    const updated = brand.learnedPreferences
-      ? `${brand.learnedPreferences}\n${summary}`
-      : summary;
+    const updated = brand.learnedPreferences ? `${brand.learnedPreferences}\n${summary}` : summary;
     await this.prisma.brandProfile.update({
       where: { id: post.brandProfileId },
       data: { learnedPreferences: updated },

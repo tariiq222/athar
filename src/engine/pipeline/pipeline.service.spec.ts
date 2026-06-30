@@ -122,16 +122,12 @@ describe('PipelineService', () => {
   it('degrades to text-only post when image generation fails with provider_error', async () => {
     const d = deps({
       imageProvider: {
-        generateImage: jest
-          .fn()
-          .mockRejectedValue(new EngineError('img down', 'provider_error')),
+        generateImage: jest.fn().mockRejectedValue(new EngineError('img down', 'provider_error')),
       },
     });
     const res = await make(d).generateOne(req);
     expect(res.imageMethod).toBeNull();
-    expect(d.assembleStage.run).toHaveBeenCalledWith(
-      expect.objectContaining({ image: null }),
-    );
+    expect(d.assembleStage.run).toHaveBeenCalledWith(expect.objectContaining({ image: null }));
   });
 
   it('re-drafts once with a tighter brief on PlatformLimitExceeded', async () => {

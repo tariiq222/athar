@@ -47,9 +47,7 @@ describe('ClaudeContentProvider', () => {
     const p = new ClaudeContentProvider(claude);
     const d = await p.draft(input);
     expect(d.text).toBe('النمو ٤٪');
-    expect(d.citations).toEqual([
-      { claim: 'GDP 4%', sourceUrl: 'https://reuters.com/x' },
-    ]);
+    expect(d.citations).toEqual([{ claim: 'GDP 4%', sourceUrl: 'https://reuters.com/x' }]);
     expect(p.lastUsage).toEqual({ inputTokens: 20, outputTokens: 30, model: 'claude-3-5-sonnet' });
   });
 

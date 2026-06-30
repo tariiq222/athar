@@ -1,8 +1,4 @@
-import {
-  CONTENT_PROVIDER,
-  SEARCH_PROVIDER,
-  IMAGE_PROVIDER,
-} from './provider.tokens';
+import { CONTENT_PROVIDER, SEARCH_PROVIDER, IMAGE_PROVIDER } from './provider.tokens';
 
 describe('engine seam DI tokens', () => {
   it('exposes stable string keys shared between EngineModule and consumers', () => {

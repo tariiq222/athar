@@ -19,15 +19,9 @@ export class CritiqueStage {
     private readonly usage: UsageRecorder,
   ) {}
 
-  async run(
-    initial: Draft,
-    input: DraftInput,
-  ): Promise<{ draft: Draft; issues: string[] }> {
+  async run(initial: Draft, input: DraftInput): Promise<{ draft: Draft; issues: string[] }> {
     const rubric = buildRubric(input.brand, input.platform);
-    const maxRounds = Math.min(
-      3,
-      Math.max(2, Number(process.env.ENGINE_CRITIQUE_MAX_ROUNDS ?? 3)),
-    );
+    const maxRounds = Math.min(3, Math.max(2, Number(process.env.ENGINE_CRITIQUE_MAX_ROUNDS ?? 3)));
 
     let current = initial;
     let best: { draft: Draft; result: CritiqueResult } | null = null;
@@ -57,7 +51,8 @@ export class CritiqueStage {
       kind: 'text',
       units: inputTokens + outputTokens,
       costUsd: textCostUsd(
-        (model === 'claude-3-5-haiku' ? 'claude-3-5-haiku' : 'claude-3-5-sonnet') as 'claude-3-5-sonnet' | 'claude-3-5-haiku',
+        (model === 'claude-3-5-haiku' ? 'claude-3-5-haiku' : 'claude-3-5-sonnet') as
+          'claude-3-5-sonnet' | 'claude-3-5-haiku',
         inputTokens,
         outputTokens,
       ),

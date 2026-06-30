@@ -2,11 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { EngineError } from '../../types';
-import {
-  OPENROUTER_BASE_URL,
-  OPENROUTER_HEADERS,
-  requireOpenRouterKey,
-} from '../openrouter';
+import { OPENROUTER_BASE_URL, OPENROUTER_HEADERS, requireOpenRouterKey } from '../openrouter';
 
 export interface CompleteOptions {
   system: string;
@@ -63,10 +59,7 @@ export class ClaudeClient {
         outputTokens: res.usage.output_tokens,
       };
     } catch (err) {
-      throw new EngineError(
-        `Anthropic call failed: ${(err as Error).message}`,
-        'provider_error',
-      );
+      throw new EngineError(`Anthropic call failed: ${(err as Error).message}`, 'provider_error');
     }
   }
 }

@@ -2,9 +2,7 @@ import { MonthPlanService } from './month-plan.service';
 
 const add = jest.fn();
 jest.mock('bullmq', () => ({
-  Queue: jest
-    .fn()
-    .mockImplementation(() => ({ add: (...a: unknown[]) => add(...a) })),
+  Queue: jest.fn().mockImplementation(() => ({ add: (...a: unknown[]) => add(...a) })),
   Worker: jest.fn().mockImplementation(() => ({ on: jest.fn() })),
 }));
 

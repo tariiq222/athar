@@ -33,12 +33,7 @@ describe('OverlayRenderer', () => {
   it('renders svg via satori and composites it over the background', async () => {
     satoriMock.mockResolvedValue('<svg>text</svg>');
     const r = new OverlayRenderer(async () => Buffer.from('font-bytes'));
-    const out = await r.render(
-      Buffer.from('bg'),
-      'ابدأ الآن',
-      kit,
-      [1200, 1200],
-    );
+    const out = await r.render(Buffer.from('bg'), 'ابدأ الآن', kit, [1200, 1200]);
     expect(satoriMock).toHaveBeenCalled();
     expect(composite).toHaveBeenCalled();
     expect(out.toString()).toBe('result-png');

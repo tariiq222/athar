@@ -17,16 +17,11 @@ export interface FormatResult {
  * never silently truncates body text — over-limit body signals the
  * assemble stage to re-draft with a tighter constraint.
  */
-export function formatForPlatform(
-  draft: Draft,
-  platform: Platform,
-): FormatResult {
+export function formatForPlatform(draft: Draft, platform: Platform): FormatResult {
   const limit = getLimit(platform);
 
   const weightedLength =
-    platform === 'x'
-      ? twitter.parseTweet(draft.text).weightedLength
-      : draft.text.length;
+    platform === 'x' ? twitter.parseTweet(draft.text).weightedLength : draft.text.length;
 
   const cap = limit.maxChars;
   const overBy = Math.max(0, weightedLength - cap);

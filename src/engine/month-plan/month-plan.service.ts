@@ -70,10 +70,7 @@ export class MonthPlanService implements OnModuleInit {
     return { monthPlanId: plan.id };
   }
 
-  async getProgress(
-    tenantId: string,
-    monthPlanId: string,
-  ): Promise<MonthPlanProgress> {
+  async getProgress(tenantId: string, monthPlanId: string): Promise<MonthPlanProgress> {
     // Scope by tenantId so one tenant cannot read another tenant's plan
     // progress by guessing a monthPlanId. findUniqueOrThrow only accepts
     // unique fields, so findFirstOrThrow adds the tenantId predicate while

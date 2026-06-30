@@ -9,7 +9,7 @@ jest.mock('openai', () =>
 );
 
 const config = {
-  get: (k: string) => ({ OPENAI_API_KEY: 'k', OPENAI_VISION_MODEL: 'vision' }[k]),
+  get: (k: string) => ({ OPENAI_API_KEY: 'k', OPENAI_VISION_MODEL: 'vision' })[k],
 } as any;
 
 function makeVerifier(usage: any = { record: jest.fn().mockResolvedValue(undefined) }) {
@@ -44,9 +44,7 @@ describe('VisionVerifier', () => {
     const v = makeVerifier(usage);
     const r = await v.verify(Buffer.from('x'), 'ابدأ الآن');
     expect(r.matches).toBe(false);
-    expect(usage.record).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'image_verify' }),
-    );
+    expect(usage.record).toHaveBeenCalledWith(expect.objectContaining({ kind: 'image_verify' }));
   });
 
   it('records image_verify cost as gpt-4o-mini text cost', async () => {

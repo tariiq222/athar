@@ -12,10 +12,7 @@ import { ImageStorageService } from './storage/image-storage.service';
 
 import { SourceFetcher } from './search/source-fetcher';
 import { FactExtractor } from './search/fact-extractor';
-import {
-  LiveSearchProvider,
-  CandidateUrlProvider,
-} from './search/live-search.provider';
+import { LiveSearchProvider, CandidateUrlProvider } from './search/live-search.provider';
 
 import { UsageRecorder } from './usage/usage.recorder';
 import { DraftStage } from './draft/draft.stage';
@@ -27,20 +24,14 @@ import { MonthPlanProcessor } from './month-plan/month-plan.processor';
 import { MonthPlanService } from './month-plan/month-plan.service';
 import { LearningService } from './learning/learning.service';
 import { TenantContextService } from '../common/tenant-context.service';
-import {
-  CONTENT_PROVIDER,
-  IMAGE_PROVIDER,
-  SEARCH_PROVIDER,
-} from './providers/provider.tokens';
+import { CONTENT_PROVIDER, IMAGE_PROVIDER, SEARCH_PROVIDER } from './providers/provider.tokens';
 
 // Real candidate URL provider: a whitelist-restricted web search.
 // Replace the body with a live search SDK call (results filtered by
 // isDomainAllowed at fetch time in SourceFetcher). For now this returns
 // site-scoped query URLs — sufficient as a placeholder for the seam.
 const candidateUrlProvider: CandidateUrlProvider = async (topic, whitelist) =>
-  whitelist.map(
-    (domain) => `https://${domain}/?q=${encodeURIComponent(topic)}`,
-  );
+  whitelist.map((domain) => `https://${domain}/?q=${encodeURIComponent(topic)}`);
 
 @Module({
   imports: [ConfigModule, PrismaModule],
@@ -67,12 +58,8 @@ const candidateUrlProvider: CandidateUrlProvider = async (topic, whitelist) =>
     {
       provide: LiveSearchProvider,
       inject: [SourceFetcher, FactExtractor, UsageRecorder, 'CANDIDATE_URL_PROVIDER'],
-      useFactory: (
-        f: SourceFetcher,
-        e: FactExtractor,
-        u: UsageRecorder,
-        c: CandidateUrlProvider,
-      ) => new LiveSearchProvider(f, e, u, c),
+      useFactory: (f: SourceFetcher, e: FactExtractor, u: UsageRecorder, c: CandidateUrlProvider) =>
+        new LiveSearchProvider(f, e, u, c),
     },
     // Seam token bindings: consumers depend on the interface, not the
     // concrete class — swap impls without touching call sites.

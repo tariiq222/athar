@@ -10,10 +10,7 @@ const make = (text: string, hashtags: string[]): Draft => ({
 
 describe('formatForPlatform', () => {
   it('linkedin: fits under 3000 and clamps to max 5 hashtags', () => {
-    const r = formatForPlatform(
-      make('مرحبا', ['#a', '#b', '#c', '#d', '#e', '#f']),
-      'linkedin',
-    );
+    const r = formatForPlatform(make('مرحبا', ['#a', '#b', '#c', '#d', '#e', '#f']), 'linkedin');
     expect(r.fits).toBe(true);
     expect(r.weightedLength).toBe('مرحبا'.length);
     expect(r.hashtags).toHaveLength(5);

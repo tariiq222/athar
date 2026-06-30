@@ -28,10 +28,7 @@ export class OpenAiImageClient {
       });
       return Buffer.from(res.data![0].b64_json!, 'base64');
     } catch (err) {
-      throw new EngineError(
-        `gpt-image call failed: ${(err as Error).message}`,
-        'provider_error',
-      );
+      throw new EngineError(`gpt-image call failed: ${(err as Error).message}`, 'provider_error');
     }
   }
 }

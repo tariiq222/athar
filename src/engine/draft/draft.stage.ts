@@ -24,7 +24,8 @@ export class DraftStage {
       kind: 'text',
       units: inputTokens + outputTokens,
       costUsd: textCostUsd(
-        (model === 'claude-3-5-haiku' ? 'claude-3-5-haiku' : 'claude-3-5-sonnet') as 'claude-3-5-sonnet' | 'claude-3-5-haiku',
+        (model === 'claude-3-5-haiku' ? 'claude-3-5-haiku' : 'claude-3-5-sonnet') as
+          'claude-3-5-sonnet' | 'claude-3-5-haiku',
         inputTokens,
         outputTokens,
       ),

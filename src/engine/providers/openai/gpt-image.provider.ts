@@ -37,20 +37,13 @@ export class GptImageProvider implements ImageProvider {
     private readonly tenantContext: TenantContextService,
   ) {}
 
-  async generateImage(
-    brief: string,
-    kit: BrandKit,
-    platform: Platform,
-  ): Promise<ImageAsset> {
+  async generateImage(brief: string, kit: BrandKit, platform: Platform): Promise<ImageAsset> {
     const size = getLimit(platform).images.defaultSize;
     const sizeStr = `${size[0]}x${size[1]}`;
     const key = `posts/${Date.now()}-${Math.random().toString(36).slice(2)}.png`;
 
     if (IMAGE_GATE_DECISION.primaryMethod === 'overlay') {
-      const bg = await this.imageClient.generate(
-        this.backgroundPrompt(brief, kit),
-        sizeStr,
-      );
+      const bg = await this.imageClient.generate(this.backgroundPrompt(brief, kit), sizeStr);
       await this.recordImageUsage(size, 1);
       const composited = await this.overlay.render(bg, brief, kit, size);
       const url = await this.storage.upload(composited, key);
@@ -68,15 +61,9 @@ export class GptImageProvider implements ImageProvider {
 
     while (attempts < maxAttempts) {
       attempts += 1;
-      lastBytes = await this.imageClient.generate(
-        this.textPrompt(brief, kit),
-        sizeStr,
-      );
+      lastBytes = await this.imageClient.generate(this.textPrompt(brief, kit), sizeStr);
       await this.recordImageUsage(size, attempts);
-      const { verifiedText, matches } = await this.verifier.verify(
-        lastBytes,
-        brief,
-      );
+      const { verifiedText, matches } = await this.verifier.verify(lastBytes, brief);
       if (matches) {
         const url = await this.storage.upload(lastBytes, key);
         return { url, verifiedText, method: 'gpt-image', attempts };

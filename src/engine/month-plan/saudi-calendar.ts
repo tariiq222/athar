@@ -43,7 +43,5 @@ export function distributePlan(
     }
   }
 
-  return slots
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
-    .slice(0, count);
+  return slots.sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, count);
 }

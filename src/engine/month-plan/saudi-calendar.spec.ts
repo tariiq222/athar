@@ -14,9 +14,7 @@ describe('distributePlan', () => {
   });
 
   it('places occasion dates first and tags them', () => {
-    const occ = [
-      { date: new Date('2026-07-10T00:00:00.000Z'), name: 'National Day' },
-    ];
+    const occ = [{ date: new Date('2026-07-10T00:00:00.000Z'), name: 'National Day' }];
     const slots = distributePlan(3, start, occ);
     expect(slots.some((s) => s.occasion === 'National Day')).toBe(true);
     expect(slots).toHaveLength(3);

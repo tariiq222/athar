@@ -6,10 +6,7 @@ import type { Platform } from '../../config/platform-limits';
  * brand + platform are consumed by the critique prompt (Task 10) to
  * make each check concrete — this builder only sets the targets.
  */
-export function buildRubric(
-  _brand: BrandProfileInput,
-  _platform: Platform,
-): Rubric {
+export function buildRubric(_brand: BrandProfileInput, _platform: Platform): Rubric {
   return {
     toneMatch: true,
     sourceIntegrity: true,

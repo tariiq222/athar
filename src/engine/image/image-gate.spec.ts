@@ -1,9 +1,4 @@
-import {
-  isArabicTextBroken,
-  computeBreakageRate,
-  decideMethod,
-  GateSample,
-} from './image-gate';
+import { isArabicTextBroken, computeBreakageRate, decideMethod, GateSample } from './image-gate';
 
 describe('image-gate breakage math', () => {
   it('flags broken when normalized verified text differs from intended', () => {

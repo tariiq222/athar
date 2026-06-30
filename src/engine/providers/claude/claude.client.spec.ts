@@ -13,7 +13,7 @@ const config = {
     ({
       OPENROUTER_API_KEY: 'sk-or-v1-test',
       ANTHROPIC_MODEL: 'anthropic/claude-sonnet-4',
-    }[k]),
+    })[k],
 } as any;
 
 describe('ClaudeClient', () => {
@@ -38,8 +38,6 @@ describe('ClaudeClient', () => {
     await expect(client.complete({ system: 's', user: 'u' })).rejects.toMatchObject({
       kind: 'provider_error',
     });
-    await expect(client.complete({ system: 's', user: 'u' })).rejects.toBeInstanceOf(
-      EngineError,
-    );
+    await expect(client.complete({ system: 's', user: 'u' })).rejects.toBeInstanceOf(EngineError);
   });
 });

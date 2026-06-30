@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import type { SearchProvider, FetchInput, FetchResult } from '../providers/search-provider.interface';
+import type {
+  SearchProvider,
+  FetchInput,
+  FetchResult,
+} from '../providers/search-provider.interface';
 import type { FactSet, Fact, BrandProfileInput } from '../types';
 import { EngineError } from '../types';
 import { SourceFetcher } from './source-fetcher';
@@ -7,10 +11,7 @@ import { FactExtractor } from './fact-extractor';
 import { UsageRecorder } from '../usage/usage.recorder';
 import { buildWhitelist } from '../../config/trusted-sources';
 
-export type CandidateUrlProvider = (
-  topic: string,
-  whitelist: string[],
-) => Promise<string[]>;
+export type CandidateUrlProvider = (topic: string, whitelist: string[]) => Promise<string[]>;
 
 /**
  * The real SearchProvider. Caps fetches per post (margin protection),

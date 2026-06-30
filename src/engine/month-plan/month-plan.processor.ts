@@ -64,10 +64,7 @@ export class MonthPlanProcessor {
     return progress;
   }
 
-  private async persist(
-    monthPlanId: string,
-    p: MonthPlanProgress,
-  ): Promise<void> {
+  private async persist(monthPlanId: string, p: MonthPlanProgress): Promise<void> {
     await this.prisma.monthPlan.update({
       where: { id: monthPlanId },
       data: {

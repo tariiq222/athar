@@ -35,10 +35,7 @@ export interface GateImageGenerator {
  * the intended text. Same shape as the real `VisionVerifier.verify`.
  */
 export interface GateVisionVerifier {
-  verify(
-    bytes: Buffer,
-    intendedText: string,
-  ): Promise<{ verifiedText: string; matches: boolean }>;
+  verify(bytes: Buffer, intendedText: string): Promise<{ verifiedText: string; matches: boolean }>;
 }
 
 export interface GateBrief {
@@ -71,9 +68,7 @@ export const DEFAULT_GATE_SIZE = 20;
  * verifier's self-reported `matches`, so a mis-reporting verifier cannot
  * skew the gate.
  */
-export async function runImageGate(
-  options: RunImageGateOptions,
-): Promise<ImageGateReport> {
+export async function runImageGate(options: RunImageGateOptions): Promise<ImageGateReport> {
   const { generator, verifier, briefs } = options;
   const n = options.n ?? DEFAULT_GATE_SIZE;
 

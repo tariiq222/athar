@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { ContentProvider, DraftInput, SummarizeInput, SummaryResult } from '../content-provider.interface';
+import type {
+  ContentProvider,
+  DraftInput,
+  SummarizeInput,
+  SummaryResult,
+} from '../content-provider.interface';
 import type { Draft, Rubric, CritiqueResult } from '../../types';
 import { ClaudeClient } from './claude.client';
 
@@ -12,7 +17,11 @@ import { ClaudeClient } from './claude.client';
  */
 @Injectable()
 export class ClaudeContentProvider implements ContentProvider {
-  public lastUsage: { inputTokens: number; outputTokens: number; model: 'claude-3-5-sonnet' | 'claude-3-5-haiku' } = {
+  public lastUsage: {
+    inputTokens: number;
+    outputTokens: number;
+    model: 'claude-3-5-sonnet' | 'claude-3-5-haiku';
+  } = {
     inputTokens: 0,
     outputTokens: 0,
     model: 'claude-3-5-sonnet',
@@ -22,9 +31,7 @@ export class ClaudeContentProvider implements ContentProvider {
 
   async draft(input: DraftInput): Promise<Draft> {
     const factLines = input.factSet.hasFactualClaim
-      ? input.factSet.facts
-          .map((f) => `- "${f.claim}" (source: ${f.sourceUrl})`)
-          .join('\n')
+      ? input.factSet.facts.map((f) => `- "${f.claim}" (source: ${f.sourceUrl})`).join('\n')
       : '(no trusted source found — write as opinion/tone, make NO factual claim, add NO citation)';
 
     const system =
@@ -48,7 +55,7 @@ export class ClaudeContentProvider implements ContentProvider {
     };
 
     const parsed = JSON.parse(res.text) as Partial<Draft>;
-    const citations = input.factSet.hasFactualClaim ? parsed.citations ?? [] : [];
+    const citations = input.factSet.hasFactualClaim ? (parsed.citations ?? []) : [];
     return {
       text: parsed.text ?? '',
       citations,
@@ -136,8 +143,7 @@ export class ClaudeContentProvider implements ContentProvider {
       return Math.min(1, Math.max(0, v));
     };
     const str = (v: unknown) => (typeof v === 'string' ? v : '');
-    const arr = (v: unknown) =>
-      Array.isArray(v) ? v.filter((s) => typeof s === 'string') : [];
+    const arr = (v: unknown) => (Array.isArray(v) ? v.filter((s) => typeof s === 'string') : []);
 
     return {
       tone: str(parsed.tone),

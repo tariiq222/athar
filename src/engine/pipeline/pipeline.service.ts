@@ -1,10 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type {
-  GenerationRequest,
-  PipelineResult,
-  Draft,
-  ImageAsset,
-} from '../types';
+import type { GenerationRequest, PipelineResult, Draft, ImageAsset } from '../types';
 import { EngineError } from '../types';
 import type { DraftInput } from '../providers/content-provider.interface';
 import type { ImageProvider } from '../providers/image-provider.interface';
@@ -39,10 +34,7 @@ export class PipelineService {
     private readonly tenantContext: TenantContextService,
   ) {}
 
-  async generateOne(
-    req: GenerationRequest,
-    monthPlanId?: string,
-  ): Promise<PipelineResult> {
+  async generateOne(req: GenerationRequest, monthPlanId?: string): Promise<PipelineResult> {
     const { brandProfile: brand, platform, contentType } = req;
 
     // Per-kind pre-check: search runs implicitly through research() below;
@@ -69,11 +61,7 @@ export class PipelineService {
     let image: ImageAsset | null = null;
     try {
       image = await this.tenantContext.runWithTenant(brand.tenantId, () =>
-        this.imageProvider.generateImage(
-          draft.imageBrief,
-          brand.brandKit,
-          platform,
-        ),
+        this.imageProvider.generateImage(draft.imageBrief, brand.brandKit, platform),
       );
     } catch (err) {
       if (err instanceof EngineError && err.kind === 'provider_error') {

@@ -78,7 +78,10 @@ export interface ImageAsset {
 export type EngineErrorKind = 'provider_error' | 'skipped_quota';
 
 export class EngineError extends Error {
-  constructor(message: string, public readonly kind: EngineErrorKind) {
+  constructor(
+    message: string,
+    public readonly kind: EngineErrorKind,
+  ) {
     super(message);
     this.name = 'EngineError';
   }

@@ -70,10 +70,7 @@ describe('LearningService', () => {
     const usage = { record: jest.fn() } as any;
     // Caller's tenant does NOT own p1 -> the scoped lookup must throw.
     await expect(
-      new LearningService(prisma, claude, usage).captureApproval(
-        'attacker-tenant',
-        'p1',
-      ),
+      new LearningService(prisma, claude, usage).captureApproval('attacker-tenant', 'p1'),
     ).rejects.toThrow();
     expect(claude.complete).not.toHaveBeenCalled();
     expect(prisma.brandProfile.update).not.toHaveBeenCalled();

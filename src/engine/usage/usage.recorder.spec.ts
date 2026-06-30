@@ -70,29 +70,24 @@ describe('UsageRecorder.canConsume', () => {
   });
 
   it('denies past_due regardless of count', async () => {
-    const rec = makeRecorder(
-      [],
-      { plan: 'business', status: 'past_due', trialEndsAt: null },
-    );
+    const rec = makeRecorder([], { plan: 'business', status: 'past_due', trialEndsAt: null });
     const d = await rec.canConsume('t1', 'search', BUSINESS_PLAN);
     expect(d.allowed).toBe(false);
     expect(d.reason).toContain('متأخّر');
   });
 
   it('denies canceled regardless of count', async () => {
-    const rec = makeRecorder(
-      [],
-      { plan: 'business', status: 'canceled', trialEndsAt: null },
-    );
+    const rec = makeRecorder([], { plan: 'business', status: 'canceled', trialEndsAt: null });
     const d = await rec.canConsume('t1', 'search', BUSINESS_PLAN);
     expect(d.allowed).toBe(false);
   });
 
   it('uses trial plan for trialing tenants', async () => {
-    const rec = makeRecorder(
-      [],
-      { plan: 'trial', status: 'trialing', trialEndsAt: new Date(Date.now() + 86400_000) },
-    );
+    const rec = makeRecorder([], {
+      plan: 'trial',
+      status: 'trialing',
+      trialEndsAt: new Date(Date.now() + 86400_000),
+    });
     const d = await rec.getCurrentPlan('t1');
     expect(d.code).toBe('trial');
     const c = await rec.canConsume('t1', 'text', d);

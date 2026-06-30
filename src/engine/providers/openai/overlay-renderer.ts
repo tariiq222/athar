@@ -8,9 +8,7 @@ export type FontLoader = (font: string) => Promise<Buffer>;
 
 const defaultFontLoader: FontLoader = async () => {
   // Bundled IBM Plex Sans Arabic regular; path set up at deploy time.
-  return readFile(
-    process.env.OVERLAY_FONT_PATH ?? './assets/fonts/IBMPlexSansArabic-Regular.ttf',
-  );
+  return readFile(process.env.OVERLAY_FONT_PATH ?? './assets/fonts/IBMPlexSansArabic-Regular.ttf');
 };
 
 /**

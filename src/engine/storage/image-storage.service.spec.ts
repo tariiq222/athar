@@ -2,9 +2,7 @@ import { ImageStorageService } from './image-storage.service';
 
 const putObject = jest.fn();
 jest.mock('minio', () => ({
-  Client: jest
-    .fn()
-    .mockImplementation(() => ({ putObject: (...a: unknown[]) => putObject(...a) })),
+  Client: jest.fn().mockImplementation(() => ({ putObject: (...a: unknown[]) => putObject(...a) })),
 }));
 
 const config = {
@@ -15,7 +13,7 @@ const config = {
       MINIO_ACCESS_KEY: 'a',
       MINIO_SECRET_KEY: 's',
       MINIO_BUCKET: 'athar-images',
-    }[k]),
+    })[k],
 } as any;
 
 describe('ImageStorageService', () => {

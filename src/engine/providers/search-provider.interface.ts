@@ -1,13 +1,13 @@
 import type { FactSet, BrandProfileInput } from '../types';
 
 export interface FetchInput {
-  url: string;              // public website page or social profile url
+  url: string; // public website page or social profile url
 }
 
 export interface FetchResult {
   ok: boolean;
-  text?: string;            // extracted text when ok
-  error?: string;           // reason when not ok
+  text?: string; // extracted text when ok
+  error?: string; // reason when not ok
 }
 
 export interface SearchProvider {

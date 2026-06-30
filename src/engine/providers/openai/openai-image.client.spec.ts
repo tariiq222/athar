@@ -9,8 +9,7 @@ jest.mock('openai', () =>
 );
 
 const config = {
-  get: (k: string) =>
-    ({ OPENAI_API_KEY: 'k', OPENAI_IMAGE_MODEL: 'img-model' }[k]),
+  get: (k: string) => ({ OPENAI_API_KEY: 'k', OPENAI_IMAGE_MODEL: 'img-model' })[k],
 } as any;
 
 describe('OpenAiImageClient', () => {
