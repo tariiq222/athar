@@ -50,7 +50,7 @@ describe('ClaudeContentProvider', () => {
     expect(d.citations).toEqual([
       { claim: 'GDP 4%', sourceUrl: 'https://reuters.com/x' },
     ]);
-    expect(p.lastUsage).toEqual({ inputTokens: 20, outputTokens: 30 });
+    expect(p.lastUsage).toEqual({ inputTokens: 20, outputTokens: 30, model: 'claude-3-5-sonnet' });
   });
 
   it('draft returns empty citations when there is no factual claim', async () => {

@@ -25,7 +25,7 @@ describe('CritiqueStage', () => {
     const provider = {
       critique: jest.fn().mockResolvedValue({ score: 0.9, passed: true, issues: [] }),
       draft: jest.fn(),
-      lastUsage: { inputTokens: 1, outputTokens: 1 },
+      lastUsage: { inputTokens: 1, outputTokens: 1, model: 'claude-3-5-sonnet' },
     } as any;
     const usage = { record: jest.fn().mockResolvedValue(undefined) } as any;
     const stage = new CritiqueStage(provider, usage);
@@ -43,7 +43,7 @@ describe('CritiqueStage', () => {
       draft: jest
         .fn()
         .mockResolvedValue({ text: 'v1', citations: [], hashtags: [], imageBrief: '' }),
-      lastUsage: { inputTokens: 1, outputTokens: 1 },
+      lastUsage: { inputTokens: 1, outputTokens: 1, model: 'claude-3-5-sonnet' },
     } as any;
     const usage = { record: jest.fn().mockResolvedValue(undefined) } as any;
     const stage = new CritiqueStage(provider, usage);
@@ -64,7 +64,7 @@ describe('CritiqueStage', () => {
         .fn()
         .mockResolvedValueOnce({ text: 'v1', citations: [], hashtags: [], imageBrief: '' })
         .mockResolvedValueOnce({ text: 'v2', citations: [], hashtags: [], imageBrief: '' }),
-      lastUsage: { inputTokens: 1, outputTokens: 1 },
+      lastUsage: { inputTokens: 1, outputTokens: 1, model: 'claude-3-5-sonnet' },
     } as any;
     const usage = { record: jest.fn().mockResolvedValue(undefined) } as any;
     const stage = new CritiqueStage(provider, usage);

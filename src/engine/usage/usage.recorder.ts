@@ -4,7 +4,7 @@ import { PlanDefinition, resolvePlan } from '../../config/billing-plans';
 
 export interface UsageInput {
   tenantId: string;
-  kind: 'text' | 'image' | 'search';
+  kind: 'text' | 'image' | 'image_verify' | 'search';
   units: number;
   costUsd: number;
   subscriptionId?: string;
@@ -77,7 +77,7 @@ export class UsageRecorder {
    */
   async canConsume(
     tenantId: string,
-    kind: 'text' | 'image' | 'search',
+    kind: 'text' | 'image' | 'image_verify' | 'search',
     planDef: PlanDefinition,
   ): Promise<ConsumeDecision> {
     const sub = (await this.prisma.subscription.findFirst({
@@ -116,6 +116,7 @@ export class UsageRecorder {
       {
         text: planDef.monthlyDraftCap,
         image: planDef.monthlyImageCap,
+        image_verify: planDef.monthlyImageCap,
         search: planDef.monthlySearchCap,
       } as const
     )[kind];
@@ -128,7 +129,7 @@ export class UsageRecorder {
     const used = agg._sum.units ?? 0;
 
     if (used >= cap) {
-      const kindAr = { text: 'المسودّات', image: 'الصور', search: 'عمليات البحث' }[kind];
+      const kindAr = { text: 'المسودّات', image: 'الصور', image_verify: 'الصور', search: 'عمليات البحث' }[kind];
       return {
         allowed: false,
         used,

@@ -12,7 +12,11 @@ import { ClaudeClient } from './claude.client';
  */
 @Injectable()
 export class ClaudeContentProvider implements ContentProvider {
-  public lastUsage = { inputTokens: 0, outputTokens: 0 };
+  public lastUsage: { inputTokens: number; outputTokens: number; model: 'claude-3-5-sonnet' | 'claude-3-5-haiku' } = {
+    inputTokens: 0,
+    outputTokens: 0,
+    model: 'claude-3-5-sonnet',
+  };
 
   constructor(private readonly claude: ClaudeClient) {}
 
@@ -37,7 +41,11 @@ export class ClaudeContentProvider implements ContentProvider {
       `Facts:\n${factLines}`;
 
     const res = await this.claude.complete({ system, user, maxTokens: 2048 });
-    this.lastUsage = { inputTokens: res.inputTokens, outputTokens: res.outputTokens };
+    this.lastUsage = {
+      inputTokens: res.inputTokens,
+      outputTokens: res.outputTokens,
+      model: this.resolveModel(),
+    };
 
     const parsed = JSON.parse(res.text) as Partial<Draft>;
     const citations = input.factSet.hasFactualClaim ? parsed.citations ?? [] : [];
@@ -56,7 +64,11 @@ export class ClaudeContentProvider implements ContentProvider {
       'passed=true only if tone, source integrity, platform compliance, prohibitions, and clarity all hold.';
     const user = `Rubric (all must hold): ${JSON.stringify(rubric)}\nPost: ${JSON.stringify(draft)}`;
     const res = await this.claude.complete({ system, user, maxTokens: 1024 });
-    this.lastUsage = { inputTokens: res.inputTokens, outputTokens: res.outputTokens };
+    this.lastUsage = {
+      inputTokens: res.inputTokens,
+      outputTokens: res.outputTokens,
+      model: this.resolveModel(),
+    };
 
     const parsed = JSON.parse(res.text) as Partial<CritiqueResult>;
     return {
@@ -94,7 +106,11 @@ export class ClaudeContentProvider implements ContentProvider {
       input.texts.map((t, i) => `--- [${i}] ---\n${t}`).join('\n');
 
     const res = await this.claude.complete({ system, user, maxTokens: 1024 });
-    this.lastUsage = { inputTokens: res.inputTokens, outputTokens: res.outputTokens };
+    this.lastUsage = {
+      inputTokens: res.inputTokens,
+      outputTokens: res.outputTokens,
+      model: this.resolveModel(),
+    };
 
     let parsed: Partial<SummaryResult> = {};
     try {
@@ -135,5 +151,14 @@ export class ClaudeContentProvider implements ContentProvider {
       visualStyle: str(parsed.visualStyle),
       confidence: clamp(parsed.confidence),
     };
+  }
+
+  /**
+   * Map the configured Claude model to a pricing-table key. Anything not
+   * `claude-3-5-haiku` is treated as Sonnet (the documented default).
+   */
+  private resolveModel(): 'claude-3-5-sonnet' | 'claude-3-5-haiku' {
+    const m = (this.claude as unknown as { model?: string }).model ?? '';
+    return m.includes('haiku') ? 'claude-3-5-haiku' : 'claude-3-5-sonnet';
   }
 }
