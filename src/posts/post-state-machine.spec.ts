@@ -48,4 +48,65 @@ describe('PostStateMachine', () => {
       sm.assertTransition('approved', { from: 'approved', to: 'published' }),
     ).not.toThrow();
   });
+
+  // ── additional edge cases ─────────────────────────────────────────────────
+
+  it('rejects draft → draft self-transition as INVALID_TRANSITION', () => {
+    expect(() =>
+      sm.assertTransition('draft', { from: 'draft', to: 'draft' }),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_TRANSITION' }));
+  });
+
+  it('rejects pending_review → published as INVALID_TRANSITION', () => {
+    expect(() =>
+      sm.assertTransition('pending_review', { from: 'pending_review', to: 'published' }),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_TRANSITION' }));
+  });
+
+  it('rejects published → draft (no way back from published)', () => {
+    expect(() =>
+      sm.assertTransition('published', { from: 'published', to: 'draft' }),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_TRANSITION' }));
+  });
+
+  it('rejects published → pending_review (no way back from published)', () => {
+    expect(() =>
+      sm.assertTransition('published', { from: 'published', to: 'pending_review' }),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_TRANSITION' }));
+  });
+
+  it('rejects published → approved (no way back from published)', () => {
+    expect(() =>
+      sm.assertTransition('published', { from: 'published', to: 'approved' }),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_TRANSITION' }));
+  });
+
+  it('isAllowed returns false for published → anything', () => {
+    expect(sm.isAllowed('published', 'draft')).toBe(false);
+    expect(sm.isAllowed('published', 'pending_review')).toBe(false);
+    expect(sm.isAllowed('published', 'approved')).toBe(false);
+    expect(sm.isAllowed('published', 'published')).toBe(false);
+  });
+
+  it('INVALID_TRANSITION error carries code INVALID_TRANSITION', () => {
+    let caught: any;
+    try {
+      sm.assertTransition('draft', { from: 'draft', to: 'approved' });
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeDefined();
+    expect(caught.code).toBe('INVALID_TRANSITION');
+  });
+
+  it('mismatch error carries code INVALID_TRANSITION', () => {
+    let caught: any;
+    try {
+      sm.assertTransition('draft', { from: 'approved', to: 'pending_review' });
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeDefined();
+    expect(caught.code).toBe('INVALID_TRANSITION');
+  });
 });

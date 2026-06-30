@@ -190,6 +190,12 @@ describe('error-envelope', () => {
       expect(e.getEnvelope().message).toContain('60');
     });
 
+    it('quotaExceeded labels image_verify as الصور (shared image label)', () => {
+      const e = quotaExceeded('image_verify', 30, 30);
+      expect(e.getEnvelope().message).toContain('الصور');
+      expect(e.getEnvelope().message).not.toContain('image_verify');
+    });
+
     it('paymentFailed returns 402', () => {
       expect(paymentFailed('declined').getStatus()).toBe(402);
     });

@@ -20,7 +20,7 @@ describe('MonthPlanService', () => {
   it('creates a MonthPlan row and enqueues a job', async () => {
     const create = jest.fn().mockResolvedValue({ id: 'mp-1' });
     const prisma = {
-      monthPlan: { create, findUniqueOrThrow: jest.fn() },
+      monthPlan: { create, findFirstOrThrow: jest.fn() },
     } as any;
     add.mockResolvedValue({});
     const svc = new MonthPlanService(
@@ -45,30 +45,60 @@ describe('MonthPlanService', () => {
     );
   });
 
-  it('reads progress from the MonthPlan row', async () => {
+  it('reads progress from the MonthPlan row scoped to the tenant', async () => {
+    const findFirstOrThrow = jest.fn().mockResolvedValue({
+      total: 5,
+      completed: 2,
+      failed: 1,
+      skippedQuota: 1,
+      status: 'running',
+    });
     const prisma = {
-      monthPlan: {
-        create: jest.fn(),
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
-          total: 5,
-          completed: 2,
-          failed: 1,
-          skippedQuota: 1,
-          status: 'running',
-        }),
-      },
+      monthPlan: { create: jest.fn(), findFirstOrThrow },
     } as any;
     const svc = new MonthPlanService(
       prisma,
       { process: jest.fn() } as any,
       { get: () => 'redis://localhost:6379' } as any,
     );
-    expect(await svc.getProgress('mp-1')).toEqual({
+    expect(await svc.getProgress('tn', 'mp-1')).toEqual({
       total: 5,
       completed: 2,
       failed: 1,
       skippedQuota: 1,
       status: 'running',
+    });
+    expect(findFirstOrThrow).toHaveBeenCalledWith({
+      where: { id: 'mp-1', tenantId: 'tn' },
+    });
+  });
+
+  it('rejects a plan belonging to another tenant (no cross-tenant leak)', async () => {
+    // Mock honors the tenantId predicate: a cross-tenant id resolves to no row,
+    // so findFirstOrThrow rejects (Prisma throws on missing).
+    const findFirstOrThrow = jest.fn().mockImplementation(({ where }: any) => {
+      if (where.tenantId === 'owner-tenant' && where.id === 'mp-1') {
+        return Promise.resolve({
+          total: 5,
+          completed: 0,
+          failed: 0,
+          skippedQuota: 0,
+          status: 'queued',
+        });
+      }
+      return Promise.reject(new Error('No MonthPlan found'));
+    });
+    const prisma = {
+      monthPlan: { create: jest.fn(), findFirstOrThrow },
+    } as any;
+    const svc = new MonthPlanService(
+      prisma,
+      { process: jest.fn() } as any,
+      { get: () => 'redis://localhost:6379' } as any,
+    );
+    await expect(svc.getProgress('attacker-tenant', 'mp-1')).rejects.toThrow();
+    expect(findFirstOrThrow).toHaveBeenCalledWith({
+      where: { id: 'mp-1', tenantId: 'attacker-tenant' },
     });
   });
 });

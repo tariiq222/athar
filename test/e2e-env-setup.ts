@@ -11,6 +11,10 @@ process.env.NODE_ENV ||= 'test';
 // Database (athar-postgres on port 5442 per docker-compose.yml).
 process.env.DATABASE_URL ||= 'postgresql://athar:athar@localhost:5442/athar?schema=public';
 
+// Origin allow-list consumed by OriginGuard at app construction. Needed so the
+// CSRF/Origin e2e suites have a known allowed Origin to assert against.
+process.env.CORS_ORIGINS ||= 'https://app.athar.sa,http://localhost:3000';
+
 // Redis (athar-redis on port 6389 per docker-compose.yml).
 process.env.REDIS_HOST ||= 'localhost';
 process.env.REDIS_PORT ||= '6389';

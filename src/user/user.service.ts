@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContext } from '../tenant/tenant-context';
 import { confirmationRequired } from '../common/errors/error-envelope';
+import { latestSubscription } from '../common/subscription';
 
 // Selection that NEVER exposes secret columns.
 const SAFE_USER_SELECT = {
@@ -29,9 +30,7 @@ export class UserService {
       where: { id: ctx.tenantId },
       select: { id: true, name: true },
     });
-    const subscription = await this.prisma.subscription.findFirst({
-      where: { tenantId: ctx.tenantId },
-      orderBy: { createdAt: 'desc' },
+    const subscription = await latestSubscription(this.prisma, ctx.tenantId, {
       select: { status: true, plan: true, trialEndsAt: true },
     });
     return { user, tenant, subscription };
